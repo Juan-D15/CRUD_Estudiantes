@@ -1,0 +1,53 @@
+# --- SO / Sistema ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Python / Django ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+
+# Virtualenv
+.venv/
+venv/
+env/
+
+# Distribución / empaques
+build/
+dist/
+*.egg-info/
+
+# Base de datos local (por si creas sqlite para pruebas)
+db.sqlite3
+
+# Variables de entorno (¡no subir credenciales!)
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Archivos estáticos compilados (NO tus fuentes en notas/static/)
+# Ajusta estos nombres al STATIC_ROOT que definas para collectstatic
+/staticfiles/
+/static_root/
+/media/
+
+# Cachés y herramientas
+.mypy_cache/
+.pytest_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+htmlcov/
+.coverage*
+.cache/
+
+# IDE / Editor (opcional: si quieres compartir .vscode/settings.json, quita esta sección)
+.vscode/
+.idea/
+*.code-workspace
+
+# Si luego agregas tooling de Node
+node_modules/
