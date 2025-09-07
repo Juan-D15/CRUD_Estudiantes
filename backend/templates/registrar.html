@@ -1,0 +1,66 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Registrar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/registrar.css' %}">
+</head>
+<body>
+  <div class="frame">
+    <div class="container">
+      <aside class="left">
+        <h1 class="brand-text">Portal de registro<br>de estudiantes</h1>
+        <div class="brand-logo" aria-label="Logo del portal" role="img">
+          <svg viewBox="0 0 64 64" width="120" height="120" aria-hidden="true">
+            <path d="M10 24l22-8 22 8-22 8-22-8z" fill="none" stroke="white" stroke-width="3"/>
+            <path d="M21 30v6c6 3 16 3 22 0v-6" fill="none" stroke="white" stroke-width="3"/>
+            <circle cx="52" cy="28" r="3" fill="white"/><path d="M52 30v10" stroke="white" stroke-width="3"/>
+          </svg>
+        </div>
+      </aside>
+
+      <main class="right">
+        <section class="panel">
+          <h2 class="panel-title">Registrar</h2>
+
+          <form id="frmRegistrar" novalidate>
+            {% csrf_token %}
+            <div class="field" data-field="nombres">
+              <input type="text" id="nombres" placeholder="Nombres" autocomplete="off"/>
+              <span class="icon"></span>
+              <small id="err-nombres" class="error"></small>
+            </div>
+
+            <div class="field" data-field="apellidos">
+              <input type="text" id="apellidos" placeholder="Apellidos" autocomplete="off"/>
+              <span class="icon"></span>
+              <small id="err-apellidos" class="error"></small>
+            </div>
+
+            <div class="field" data-field="correo">
+              <input type="email" id="correo" placeholder="Correo" autocomplete="off"/>
+              <span class="icon"></span>
+              <small id="err-correo" class="error"></small>
+            </div>
+
+            <div class="field" data-field="telefono">
+              <input type="tel" id="telefono" inputmode="numeric" maxlength="8" placeholder="Teléfono (8 dígitos)" autocomplete="off"/>
+              <span class="icon"></span>
+              <small id="err-telefono" class="error"></small>
+            </div>
+
+            <button class="btn-primary" type="submit">Registrar</button>
+            <p id="msg" class="msg"></p>
+          </form>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="{% static 'js/registrar.js' %}"></script>
+</body>
+</html>

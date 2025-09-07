@@ -1,0 +1,75 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Actualizar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/actualizar.css' %}">
+</head>
+<body>
+  <div class="frame">
+    <div class="container">
+      <aside class="left">
+        <h1 class="brand-text">Portal de registro<br>de estudiantes</h1>
+        <div class="brand-logo" aria-label="Logo del portal" role="img">
+          <svg viewBox="0 0 64 64" width="120" height="120" aria-hidden="true">
+            <path d="M10 24l22-8 22 8-22 8-22-8z" fill="none" stroke="white" stroke-width="3"/>
+            <path d="M21 30v6c6 3 16 3 22 0v-6" fill="none" stroke="white" stroke-width="3"/>
+            <circle cx="52" cy="28" r="3" fill="white"/><path d="M52 30v10" stroke="white" stroke-width="3"/>
+          </svg>
+        </div>
+      </aside>
+
+      <main class="right">
+        <section class="panel search-panel">
+          <h2 class="panel-title">Buscar Estudiante</h2>
+          <form id="frmBuscar" novalidate>
+            {% csrf_token %}
+            <div class="field" data-field="id">
+              <input type="text" id="idEstudiante" placeholder="ID del estudiante" inputmode="numeric" autocomplete="off"/>
+              <span class="icon"></span>
+              <small id="err-id" class="error"></small>
+            </div>
+            <button id="btnBuscar" class="btn-primary" type="button">Buscar</button>
+            <p id="msgBuscar" class="msg"></p>
+          </form>
+        </section>
+
+        <section id="panelActualizar" class="panel hidden" aria-hidden="true">
+          <h2 class="panel-title">Actualizar</h2>
+          <form id="frmActualizar" novalidate>
+            {% csrf_token %}
+            <div class="field">
+              <input id="nombres" placeholder="Nombres"/>
+              <span class="icon"></span>
+              <small id="err-nombres" class="error"></small>
+            </div>
+            <div class="field">
+              <input id="apellidos" placeholder="Apellidos"/>
+              <span class="icon"></span>
+              <small id="err-apellidos" class="error"></small>
+            </div>
+            <div class="field">
+              <input id="correo" placeholder="Correo"/>
+              <span class="icon"></span>
+              <small id="err-correo" class="error"></small>
+            </div>
+            <div class="field">
+              <input id="telefono" placeholder="Teléfono" maxlength="8"/>
+              <span class="icon"></span>
+              <small id="err-telefono" class="error"></small>
+            </div>
+            <button id="btnActualizar" class="btn-primary" type="submit">Actualizar</button>
+            <p id="msgActualizar" class="msg"></p>
+          </form>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="{% static 'js/actualizar.js' %}"></script>
+</body>
+</html>
