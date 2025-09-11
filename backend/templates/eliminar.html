@@ -4,10 +4,10 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Actualizar</title>
+  <title>Eliminar Estudiante</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/actualizar.css' %}">
+  <link rel="stylesheet" href="{% static 'css/eliminar.css' %}">
 </head>
 <body>
   <div class="frame">
@@ -24,52 +24,63 @@
       </aside>
 
       <main class="right">
-        <section class="panel search-panel">
-          <h2 class="panel-title">Buscar Estudiante</h2>
-          <form id="frmBuscar" novalidate>
-            {% csrf_token %}
-            <div class="field" data-field="id">
-              <input type="text" id="idEstudiante" placeholder="ID del estudiante" inputmode="numeric" autocomplete="off"/>
-              <span class="icon"></span>
-              <small id="err-id" class="error"></small>
-            </div>
-            <button id="btnBuscar" class="btn-primary" type="button">Buscar</button>
-            <p id="msgBuscar" class="msg"></p>
-          </form>
-        </section>
-
-        <section id="panelActualizar" class="panel hidden" aria-hidden="true">
-          <h2 class="panel-title">Actualizar</h2>
-          <form id="frmActualizar" novalidate>
-            {% csrf_token %}
-            <div class="field">
-              <input id="nombres" placeholder="Nombres"/>
-              <span class="icon"></span>
-              <small id="err-nombres" class="error"></small>
-            </div>
-            <div class="field">
-              <input id="apellidos" placeholder="Apellidos"/>
-              <span class="icon"></span>
-              <small id="err-apellidos" class="error"></small>
-            </div>
-            <div class="field">
-              <input id="correo" placeholder="Correo"/>
-              <span class="icon"></span>
-              <small id="err-correo" class="error"></small>
-            </div>
-            <div class="field">
-              <input id="telefono" placeholder="Teléfono" maxlength="8"/>
-              <span class="icon"></span>
-              <small id="err-telefono" class="error"></small>
-            </div>
-            <button id="btnActualizar" class="btn-primary" type="submit">Actualizar</button>
-            <p id="msgActualizar" class="msg"></p>
-          </form>
+        <section class="panel">
+          <h2 class="panel-title">Eliminar Estudiante</h2>
+          
+          <div class="table-wrap">
+            <table class="grid">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombres</th>
+                  <th>Apellidos</th>
+                  <th>Correo</th>
+                  <th>Fecha</th>
+                  <th class="col-actions">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyEstudiantes">
+                <!-- Datos cargados dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+          
+          <p id="msg" class="msg"></p>
         </section>
       </main>
     </div>
   </div>
 
-  <script src="{% static 'js/actualizar.js' %}"></script>
+  <!-- Modal de confirmación -->
+  <div id="overlay" class="overlay hidden"></div>
+  <div id="modal" class="modal hidden">
+    <div class="modal-inner">
+      <h3>Confirmar eliminación</h3>
+      
+      <div class="preview">
+        <div class="row">
+          <span class="k">ID:</span>
+          <span class="v" id="m-id"></span>
+          <span class="k">Nombre:</span>
+          <span class="v" id="m-nombre"></span>
+          <span class="k">Apellido:</span>
+          <span class="v" id="m-apellido"></span>
+          <span class="k">Correo:</span>
+          <span class="v" id="m-correo"></span>
+          <span class="k">Fecha:</span>
+          <span class="v" id="m-fecha"></span>
+        </div>
+      </div>
+      
+      <p class="warn">⚠️ Esta acción no se puede deshacer</p>
+      
+      <div class="modal-actions">
+        <button id="btnCancelar" class="btn-outline btn-cancel">Cancelar</button>
+        <button id="btnEliminar" class="btn-outline btn-danger">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{% static 'js/eliminar.js' %}"></script>
 </body>
 </html>

@@ -9,146 +9,231 @@
   }
 
   const $ = (id) => document.getElementById(id);
-
-  // Buscar
-  const frmBuscar = $("frmBuscar");
-  const idInput   = $("idEstudiante");
-  const msgBuscar = $("msgBuscar");
+  
+  // Elementos del formulario de búsqueda
+  const idEstudiante = $("idEstudiante");
   const btnBuscar = $("btnBuscar");
+  const msgBuscar = $("msgBuscar");
+  const errId = $("err-id");
+  const frmBuscar = $("frmBuscar");
+  
+  // Panel y formulario de actualización
+  const panelActualizar = $("panelActualizar");
+  const frmActualizar = $("frmActualizar");
+  const nombres = $("nombres");
+  const apellidos = $("apellidos");
+  const correo = $("correo");
+  const telefono = $("telefono");
+  const btnActualizar = $("btnActualizar");
+  const msgActualizar = $("msgActualizar");
+  
+  // Campos de error
+  const errNombres = $("err-nombres");
+  const errApellidos = $("err-apellidos");
+  const errCorreo = $("err-correo");
+  const errTelefono = $("err-telefono");
 
-  // Panel/Actualizar
-  const panelAct  = $("panelActualizar");
-  const frmAct    = $("frmActualizar");
-  const uN        = $("nombres");
-  const uA        = $("apellidos");
-  const uC        = $("correo");
-  const uT        = $("telefono");
+  let currentId = null;
 
-  const eN = $("err-nombres");
-  const eA = $("err-apellidos");
-  const eC = $("err-correo");
-  const eT = $("err-telefono");
-  const msgAct = $("msgActualizar");
-
-  function showPanel(show) {
-    if (!panelAct) return;
-    if (show) {
-      panelAct.classList.remove("hidden");
-      panelAct.setAttribute("aria-hidden", "false");
-    } else {
-      panelAct.classList.add("hidden");
-      panelAct.setAttribute("aria-hidden", "true");
-    }
-  }
-
-  function clearUpdateErrors() {
-    [eN, eA, eC, eT].forEach(e => e && (e.textContent = ""));
-    msgAct && (msgAct.textContent = "");
-  }
-
-  function validateUpdate() {
-    let ok = true;
-    const n = (uN.value || "").trim();
-    const a = (uA.value || "").trim();
-    const c = (uC.value || "").trim();
-    const t = (uT.value || "").trim();
-
-    if (n === "") { eN.textContent = "Nombre vacío (error 1)"; ok = false; }
-    if (a === "") { eA.textContent = "Apellido vacío (error 2)"; ok = false; }
-    if (!c.includes("@")) { eC.textContent = 'Correo sin "@" (error 3)'; ok = false; }
-    if (!/^\d{8}$/.test(t)) { eT.textContent = "Teléfono inválido (8 dígitos) (error 4)"; ok = false; }
-
-    return ok;
-  }
-
-  async function fetchDetalle(id) {
-    const res = await fetch(`${API_BASE}/api/estudiantes/${id}`);
-    if (res.status === 404) return null;
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  }
-
-  async function fetchActualizar(id, payload) {
-    const res = await fetch(`${API_BASE}/api/estudiantes/${id}/update`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken") || ""
-      },
-      body: JSON.stringify(payload),
+  // Limpiar mensajes de error
+  function clearErrors() {
+    [errId, errNombres, errApellidos, errCorreo, errTelefono].forEach(el => {
+      if (el) el.textContent = "";
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    [idEstudiante, nombres, apellidos, correo, telefono].forEach(el => {
+      if (el) el.parentElement?.classList.remove("error");
+    });
   }
 
-  frmBuscar?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    msgBuscar.textContent = "";
+  // Mostrar error en campo específico
+  function showError(field, message) {
+    const errorEl = $(`err-${field}`);
+    const inputEl = $(`${field === 'id' ? 'idEstudiante' : field}`);
+    
+    if (errorEl) errorEl.textContent = message;
+    if (inputEl) inputEl.parentElement?.classList.add("error");
+  }
 
-    const id = (idInput.value || "").trim();
-    if (!/^\d+$/.test(id)) {
-      msgBuscar.textContent = "Ingresa un ID válido.";
-      showPanel(false);
-      return;
+  // Validar formulario de búsqueda
+  function validateBuscar() {
+    clearErrors();
+    const id = idEstudiante.value.trim();
+    
+    if (!id) {
+      showError('id', 'Ingrese el ID del estudiante');
+      return false;
     }
+    
+    if (!/^\d+$/.test(id)) {
+      showError('id', 'El ID debe ser un número');
+      return false;
+    }
+    
+    return true;
+  }
 
+  // Validar formulario de actualización
+  function validateActualizar() {
+    clearErrors();
+    let valid = true;
+    
+    if (!nombres.value.trim()) {
+      showError('nombres', 'Los nombres son obligatorios');
+      valid = false;
+    }
+    
+    if (!apellidos.value.trim()) {
+      showError('apellidos', 'Los apellidos son obligatorios');
+      valid = false;
+    }
+    
+    if (!correo.value.trim()) {
+      showError('correo', 'El correo es obligatorio');
+      valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.value.trim())) {
+      showError('correo', 'Ingrese un correo válido');
+      valid = false;
+    }
+    
+    if (!telefono.value.trim()) {
+      showError('telefono', 'El teléfono es obligatorio');
+      valid = false;
+    } else if (!/^\d{8}$/.test(telefono.value.trim())) {
+      showError('telefono', 'El teléfono debe tener 8 dígitos');
+      valid = false;
+    }
+    
+    return valid;
+  }
+
+  // Buscar estudiante
+  async function buscarEstudiante(id) {
     try {
-      const data = await fetchDetalle(id);
-      if (!data) {
-        msgBuscar.textContent = "Estudiante no encontrado (rc=6).";
-        showPanel(false);
-        return;
+      const res = await fetch(`${API_BASE}/api/estudiantes/${id}`);
+      
+      if (!res.ok) {
+        if (res.status === 404) {
+          msgBuscar.textContent = "Estudiante no encontrado.";
+          msgBuscar.className = "msg error";
+          return null;
+        }
+        throw new Error(`HTTP ${res.status}`);
       }
-      uN.value = data.nombres || "";
-      uA.value = data.apellidos || "";
-      uC.value = data.correo || "";
-      uT.value = data.telefono || "";
-
-      showPanel(true);
+      
+      const data = await res.json();
+      msgBuscar.textContent = "Estudiante encontrado.";
+      msgBuscar.className = "msg success";
+      return data;
+      
     } catch (err) {
       console.error(err);
-      msgBuscar.textContent = "Error al consultar el estudiante.";
-      showPanel(false);
+      msgBuscar.textContent = "Error al buscar el estudiante.";
+      msgBuscar.className = "msg error";
+      return null;
     }
-  });
+  }
 
-  btnBuscar?.addEventListener("click", (e) => {
-    e.preventDefault();
-    frmBuscar?.dispatchEvent(new Event("submit", { cancelable: true }));
-  });
+  // Cargar datos en el formulario de actualización
+  function cargarDatos(data) {
+    currentId = data.idEstudiante;
+    nombres.value = data.nombres || "";
+    apellidos.value = data.apellidos || "";
+    correo.value = data.correo || "";
+    telefono.value = data.telefono || "";
+    
+    // Mostrar panel de actualización
+    panelActualizar.classList.remove("hidden");
+    panelActualizar.setAttribute("aria-hidden", "false");
+    
+    // Limpiar mensajes previos
+    msgActualizar.textContent = "";
+  }
 
-  frmAct?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    clearUpdateErrors();
-
-    const id = (idInput.value || "").trim();
-    if (!/^\d+$/.test(id)) {
-      msgAct.textContent = "ID inválido.";
-      return;
-    }
-    if (!validateUpdate()) return;
-
+  // Actualizar estudiante
+  async function actualizarEstudiante() {
+    if (!currentId) return;
+    
     try {
-      const payload = {
-        nombres: uN.value.trim(),
-        apellidos: uA.value.trim(),
-        correo: uC.value.trim(),
-        telefono: uT.value.trim(),
-      };
-      const data = await fetchActualizar(id, payload);
-      const { rc } = data || {};
-      if (rc === 0) {
-        msgAct.textContent = "Actualizado correctamente.";
-      } else if (rc === 6) {
-        msgAct.textContent = "Estudiante no encontrado (rc=6).";
-      } else if (rc === 5) {
-        msgAct.textContent = "Error BD (posible correo duplicado).";
+      const res = await fetch(`${API_BASE}/api/estudiantes/${currentId}/update`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken") || ""
+        },
+        body: JSON.stringify({
+          nombres: nombres.value.trim(),
+          apellidos: apellidos.value.trim(),
+          correo: correo.value.trim(),
+          telefono: telefono.value.trim()
+        })
+      });
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      const data = await res.json();
+      
+      if (data?.rc === 0) {
+        msgActualizar.textContent = "Estudiante actualizado correctamente.";
+        msgActualizar.className = "msg success";
+      } else if (data?.rc === 6) {
+        msgActualizar.textContent = "Estudiante no encontrado.";
+        msgActualizar.className = "msg error";
+      } else if (data?.rc === 2) {
+        msgActualizar.textContent = "El correo ya está registrado.";
+        msgActualizar.className = "msg error";
+        showError('correo', 'Este correo ya está en uso');
       } else {
-        msgAct.textContent = `Error de validación (rc=${rc}).`;
+        msgActualizar.textContent = `Error al actualizar (código ${data?.rc ?? "?"}).`;
+        msgActualizar.className = "msg error";
       }
+      
     } catch (err) {
       console.error(err);
-      msgAct.textContent = "Error de red/servidor al actualizar.";
+      msgActualizar.textContent = "Error de red/servidor al actualizar.";
+      msgActualizar.className = "msg error";
+    }
+  }
+
+  // Event Listeners
+  btnBuscar?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    
+    if (!validateBuscar()) return;
+    
+    const id = parseInt(idEstudiante.value.trim());
+    const data = await buscarEstudiante(id);
+    
+    if (data) {
+      cargarDatos(data);
+    } else {
+      // Ocultar panel de actualización si no se encuentra
+      panelActualizar.classList.add("hidden");
+      panelActualizar.setAttribute("aria-hidden", "true");
     }
   });
+
+  frmActualizar?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    if (!validateActualizar()) return;
+    
+    await actualizarEstudiante();
+  });
+
+  // Permitir buscar con Enter
+  idEstudiante?.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      btnBuscar.click();
+    }
+  });
+
+  // Limpiar mensajes cuando se modifica el input de búsqueda
+  idEstudiante?.addEventListener("input", () => {
+    msgBuscar.textContent = "";
+    panelActualizar.classList.add("hidden");
+    panelActualizar.setAttribute("aria-hidden", "true");
+    clearErrors();
+  });
+
 })();
