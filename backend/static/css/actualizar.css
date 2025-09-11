@@ -82,7 +82,7 @@ body {
   pointer-events: none;
 }
 .field[data-field="id"] .icon::before {
-  content: "🆔";
+  content: "";
 }
 .field .icon::before {
   display: block;
