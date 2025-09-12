@@ -29,7 +29,7 @@
           <form id="frmBuscar" novalidate>
             {% csrf_token %}
             <div class="field" data-field="id">
-              <input type="text" id="idEstudiante" placeholder="ID del estudiante" inputmode="numeric" autocomplete="off"/>
+              <input type="text" id="idEstudiante" placeholder="ID del estudiante" inputmode="numeric"  pattern="[0-9]{1,10}"  required oninput="this.value = this.value.replace(/[^0-9]/g,'');" autocomplete="off"/>
               <span class="icon"></span>
               <small id="err-id" class="error"></small>
             </div>
@@ -43,22 +43,51 @@
           <form id="frmActualizar" novalidate>
             {% csrf_token %}
             <div class="field">
-              <input id="nombres" placeholder="Nombres"/>
+              <input id="nombres"
+                      maxlength="50" placeholder="Nombres" autocomplete="off"
+                        autocomplete="off"
+                        autocapitalize="words"
+                        required
+                        pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]{2,50}"
+                        title="Usa solo letras, espacios, apóstrofo (') y guion (-). 2 a 50 caracteres."
+                        oninput="
+                          // permite letras (con tildes/ñ), espacios, apóstrofo y guion
+                          this.value = this.value
+                            .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]/g,'')   // quita caracteres no permitidos
+                            .replace(/\s{2,}/g,' ')                      // colapsa espacios múltiples
+                            .replace(/^ /,'');                           // quita espacio inicial
+                        "
+                        onblur="this.value = this.value.trim();"/>
               <span class="icon"></span>
               <small id="err-nombres" class="error"></small>
             </div>
             <div class="field">
-              <input id="apellidos" placeholder="Apellidos"/>
+              <input id="apellidos" placeholder="Apellidos"
+              maxlength="50" placeholder="Nombres" autocomplete="off"
+                autocomplete="off"
+                autocapitalize="words"
+                required
+                pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]{2,50}"
+                title="Usa solo letras, espacios, apóstrofo (') y guion (-). 2 a 50 caracteres."
+                oninput="
+                  // permite letras (con tildes/ñ), espacios, apóstrofo y guion
+                  this.value = this.value
+                    .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]/g,'')   // quita caracteres no permitidos
+                    .replace(/\s{2,}/g,' ')                      // colapsa espacios múltiples
+                    .replace(/^ /,'');                           // quita espacio inicial
+                "
+                onblur="this.value = this.value.trim();"/>
               <span class="icon"></span>
               <small id="err-apellidos" class="error"></small>
             </div>
             <div class="field">
-              <input id="correo" placeholder="Correo"/>
+              <input id="correo" placeholder="Correo" maxlength="50"/>
               <span class="icon"></span>
               <small id="err-correo" class="error"></small>
             </div>
             <div class="field">
-              <input id="telefono" placeholder="Teléfono" maxlength="8"/>
+              <input id="telefono" maxlength="8" placeholder="Teléfono (8 dígitos)" inputmode="numeric"  
+                      pattern="[0-9]{1,10}"  required oninput="this.value = this.value.replace(/[^0-9]/g,'');" autocomplete="off"/>
               <span class="icon"></span>
               <small id="err-telefono" class="error"></small>
             </div>
