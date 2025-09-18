@@ -1,4 +1,3 @@
-# backend/estudiantes/views.py
 from django.http import JsonResponse, HttpResponseNotAllowed
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt  # si NO usas cookie CSRF, descomenta decoradores
