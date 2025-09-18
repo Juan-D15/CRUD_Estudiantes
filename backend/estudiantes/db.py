@@ -1,10 +1,9 @@
-# backend/estudiantes/db.py
 from django.db import connection
 
 def _row_to_dict(row, cols):
     return {c: row[i] for i, c in enumerate(cols)}
 
-# ============ CREATE ============
+# ============ INSERTAR ============
 def insertar_estudiante(nombres: str, apellidos: str, correo: str, telefono: str):
     """
     Llama a dbo.sp_InsertarEstudiante y recupera:
@@ -29,7 +28,7 @@ def insertar_estudiante(nombres: str, apellidos: str, correo: str, telefono: str
     # rc: 0=ok, 1..6=errores (según tu convenio)
     return int(rc), (int(id_nuevo) if id_nuevo is not None else None)
 
-# ============ READ ============
+# ============ CONSULTAR ============
 def listar_estudiantes():
     """
     Devuelve lista de dicts con:
@@ -59,7 +58,7 @@ def obtener_estudiante_por_id(id_est: int):
     cols = ["idEstudiante", "nombres", "apellidos", "correo", "telefono", "fechaRegistro"]
     return _row_to_dict(row, cols)
 
-# ============ UPDATE ============
+# ============ ACTUALIZAR ============
 def actualizar_estudiante(id_est: int, nombres: str, apellidos: str, correo: str, telefono: str):
     """
     Llama a dbo.sp_ActualizarEstudiante
@@ -82,7 +81,7 @@ def actualizar_estudiante(id_est: int, nombres: str, apellidos: str, correo: str
         rc = cur.fetchone()[0]
     return int(rc)
 
-# ============ DELETE ============
+# ============ ELIMINAR ============
 def eliminar_estudiante(id_est: int):
     """
     Llama a dbo.sp_EliminarEstudiante
