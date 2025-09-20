@@ -1,0 +1,96 @@
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;color:#fff;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,Cantarell,"Noto Sans",Arial,"Helvetica Neue",sans-serif;
+  background:
+    radial-gradient(1200px 700px at 60% 0%, #2a2a2a 0%, #141416 60%, #0b0c0d 100%),
+    linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.2));
+  background-blend-mode:screen,normal;
+}
+body.no-scroll{overflow:hidden}
+
+.hidden{ display:none !important; }
+
+.frame{min-height:100%;border:6px solid rgba(255,255,255,.12);padding:clamp(16px,3vw,28px)}
+.wrap{min-height:calc(100vh - clamp(16px,3vw,28px)*2 - 12px);display:grid;place-items:center}
+
+.card{
+  width:min(520px,92vw);border-radius:24px;position:relative;padding:44px 26px 24px;
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025));
+  border:1.8px solid rgba(255,255,255,.35);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),0 28px 80px rgba(0,0,0,.6),0 0 34px rgba(255,255,255,.07);
+  backdrop-filter:blur(3px);
+}
+.badge{
+  position:absolute;left:50%;transform:translateX(-50%);top:-22px;width:56px;height:56px;border-radius:50%;
+  display:grid;place-items:center;color:#0e0e10;
+  background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.75));
+  box-shadow:0 10px 30px rgba(0,0,0,.55),0 0 20px rgba(255,255,255,.25);
+}
+.title{margin:12px 0 4px;text-align:center;font-size:clamp(30px,6.4vw,34px);font-weight:900;letter-spacing:.04em;text-transform:uppercase;text-shadow:0 2px 22px rgba(255,255,255,.10),0 0 6px rgba(255,255,255,.18)}
+.subtitle{margin:0 0 16px;text-align:center;color:rgba(255,255,255,.92)}
+
+.label{display:block;font-size:13px;color:rgba(255,255,255,.85);margin:10px 0 6px}
+.input-wrap{position:relative;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.input-wrap input{width:100%;border:0;outline:0;background:transparent;color:#fff;padding:12px 42px 12px 14px;font-size:14px}
+.input-wrap:focus-within{border-color:rgba(255,255,255,.7);box-shadow:inset 0 0 0 2px rgba(255,255,255,.22)}
+.input-wrap .icon{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#fff;opacity:.9}
+.input-wrap .icon svg{width:20px;height:20px}
+.input-wrap.readonly{background:rgba(255,255,255,.03);opacity:.9}
+.input-wrap.readonly input{cursor:not-allowed}
+
+.err{color:#ffb4b4;min-height:16px;font-size:12px;margin:6px 2px 4px}
+
+.btn-primary{margin-top:14px;width:100%;background:#fff;color:#0f0f10;border:2px solid #fff;border-radius:16px;padding:12px 16px;font-weight:800;letter-spacing:.02em;cursor:pointer;transition:all .16s;box-shadow:0 12px 30px rgba(0,0,0,.45),0 0 16px rgba(255,255,255,.18) inset}
+.btn-primary:hover{background:transparent;color:#fff;border-color:rgba(255,255,255,.9);box-shadow:0 12px 30px rgba(0,0,0,.55),0 0 22px rgba(255,255,255,.28) inset;transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+
+.btn-outline{margin-top:12px;width:100%;border-radius:16px;background:transparent;color:#fff;border:2px solid rgba(255,255,255,.9);padding:12px 16px;font-weight:800;cursor:pointer;transition:all .16s;box-shadow:inset 0 0 0 0 rgba(255,255,255,0)}
+.btn-outline:hover{background:rgba(255,255,255,.06)}
+.btn-outline.danger:hover{border-color:#ff4b2f;box-shadow:0 0 30px rgba(255,75,47,.22) inset,0 0 18px rgba(255,75,47,.25);background:rgba(255,75,47,.15)}
+
+.hidden{display:none}
+
+/* Modal (el DOM se crea por JS) */
+.overlay{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.52);backdrop-filter:blur(4px)}
+.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center}
+.modal-inner{width:min(680px,calc(100% - 40px));border-radius:22px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));box-shadow:inset 0 0 0 2px rgba(255,255,255,.22),0 30px 80px rgba(0,0,0,.65),0 0 36px rgba(255,255,255,.12)}
+.modal-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.warn-icon{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:2px solid rgba(255,255,255,.85)}
+.warn-icon svg{width:22px;height:22px}
+.modal-actions.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px}
+.modal-actions .btn-outline{font-weight:800}
+.modal-actions .btn-yes:hover{border-color:#ff4b2f;background:rgba(255,75,47,.16);box-shadow:0 0 30px rgba(255,75,47,.22) inset,0 0 18px rgba(255,75,47,.25)}
+.modal-actions .btn-keep:hover{border-color:#34d399;background:rgba(52,211,153,.12);box-shadow:0 0 30px rgba(52,211,153,.22) inset,0 0 18px rgba(52,211,153,.25)}
+
+/* Botón ojo dentro del input */
+.input-wrap { position: relative; }
+
+.input-wrap .toggle-eye{
+  position: absolute;
+  top: 50%;
+  right: 46px;                 /* a la izquierda del .icon ya existente */
+  transform: translateY(-50%);
+  width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255,255,255,0.95);
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.input-wrap .toggle-eye:hover{
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.6);
+}
+
+.input-wrap .toggle-eye svg{
+  width: 18px; height: 18px;
+  fill: none; stroke: currentColor; stroke-width: 2;
+}
+
+/* util por si no lo tienes ya */
+.hidden { display: none; }

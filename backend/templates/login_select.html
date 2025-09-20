@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Selecciona tipo de acceso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <!-- Inter 400/600/900 para un “BIENVENIDO” más contundente -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/login_select.css' %}">
+</head>
+<body>
+  <div class="frame">
+    <main class="content">
+      <header class="hero">
+        <h1 class="title">BIENVENIDO</h1>
+        <p class="subtitle">Selecciona cómo deseas ingresar al portal</p>
+      </header>
+
+      <section class="options" aria-label="Tipo de inicio de sesión">
+        <!-- Administrador: usuario con laptop -->
+        <a class="option" href="{% url 'admin_login' %}" aria-label="Ingresar como administrador">
+          <h3>INGRESAR COMO<br>ADMINISTRADOR</h3>
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64" width="86" height="86">
+              <!-- cabeza -->
+              <circle cx="32" cy="16.5" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+              <!-- hombros -->
+              <path d="M18 33c3-6 9-7 14-7s11 1 14 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <!-- laptop (marco) -->
+              <rect x="18.5" y="34.5" width="27" height="16" rx="2.5"
+                    fill="none" stroke="currentColor" stroke-width="2"/>
+              <!-- pantalla interna -->
+              <rect x="21.5" y="37" width="21" height="11" rx="1.5"
+                    fill="none" stroke="currentColor" stroke-width="2"/>
+              <!-- base/teclado -->
+              <path d="M16 52h32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </a>
+
+        <!-- Secretario/a: usuario con lápiz (igual que antes) -->
+        <a class="option" href="{% url 'secretario_login' %}" aria-label="Ingresar como secretario o secretaria">
+          <h3>INGRESAR COMO<br>SECRETARIO</h3>
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64" width="86" height="86">
+              <circle cx="28" cy="24" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+              <path d="M14 48c4-7 9-10 14-10s10 3 14 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M40 44l12 12 6-6-12-12-6 6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M54 50l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </a>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,111 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Login Administrador</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/admin_login.css' %}"> 
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+<body>
+  <div class="frame">
+
+    <!-- Volver -->
+    <a class="back" href="{% url 'login_select' %}" aria-label="Volver"> 
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+
+    <main class="wrap">
+      <section class="card" aria-labelledby="title">
+        <!-- Badge superior con icono admin laptop -->
+        <div class="badge" aria-hidden="true">
+          <svg viewBox="0 0 64 64" width="36" height="36">
+            <circle cx="32" cy="16.5" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M18 33c3-6 9-7 14-7s11 1 14 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <rect x="18.5" y="34.5" width="27" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/>
+            <rect x="21.5" y="37" width="21" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M16 52h32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <h1 id="title" class="title">BIENVENIDO</h1>
+        <p class="subtitle">Inicia sesión <b>como administrador</b> para continuar</p>
+
+        <form id="formLogin" method="post" novalidate>
+          <!-- Usuario/Email -->
+          <label class="label">Usuario o Email</label>
+          <div class="input-wrap">
+            <input id="usuario" name="usuario" type="text" placeholder="tu_usuario o correo@dominio.com" autocomplete="username" required>
+            <span class="icon">
+              <!-- user -->
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20c2.5-4 6-6 8-6s5.5 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+          </div>
+          <p class="err" id="eUsuario"></p>
+
+          <!-- Password -->
+          <label class="label">Contraseña</label>
+          <div class="input-wrap">
+            <input id="password" name="password" type="password" placeholder="********" autocomplete="current-password" required>
+            <span class="icon">
+              <!-- lock -->
+              <svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            </span>
+          </div>
+          <p class="err" id="ePassword"></p>
+
+          <!-- Captcha-->
+          {% csrf_token %}
+          <div class="g-recaptcha" data-sitekey="{{ RECAPTCHA_SITE_KEY }}"></div>
+          <br/>
+          {% if error %}<p class="err">{{ error }}</p>{% endif %}
+          <button type="submit" class="btn-primary" id="btnLogin">Login</button>
+        </form>
+
+        <!-- Toggle Recuperación -->
+        <button class="link" id="toggleForgot">Olvidé mi contraseña</button>
+
+        <!-- Recuperación (colapsable) -->
+        <form id="formForgot" class="forgot hidden" novalidate>
+          <div class="line"></div>
+
+          <!-- Correo -->
+          <label class="label">Correo de recuperación</label>
+          <div class="input-wrap">
+            <input id="recEmail" type="email" placeholder="correo@dominio.com" autocomplete="email">
+            <span class="icon">
+              <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 8l8 5 8-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            </span>
+          </div>
+          <p class="tip">Si existe el correo, te llegará un código.</p>
+
+          <!-- === Nuevo botón: Enviar código === -->
+          <div class="send-code">
+            <button type="button" id="btnSendCode" class="btn-mail">Enviar código</button>
+            <span id="sendCodeMsg" class="tip" aria-live="polite"></span>
+          </div>
+
+          <!-- Código -->
+          <label class="label">Código de verificación</label>
+          <div class="input-wrap">
+            <input id="recCode" type="text" placeholder="XXXXXX" inputmode="numeric" maxlength="6">
+            <span class="icon">
+              <svg viewBox="0 0 24 24"><path d="M12 2l3 6 6 .9-4.5 4.2L17 20l-5-3-5 3 1.5-6.9L4 8.9 10 8l2-6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+
+          <button type="button" class="btn-primary" id="btnRecuperar">Recuperar contraseña</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="{% static 'js/admin-login.js' %}"></script>
+</body>
+</html>
