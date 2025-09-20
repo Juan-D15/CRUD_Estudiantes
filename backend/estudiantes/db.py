@@ -99,3 +99,23 @@ def eliminar_estudiante(id_est: int):
         cur.execute(sql, [id_est])
         rc = cur.fetchone()[0]
     return int(rc)
+
+# ============ LOGIN ============
+def login_usuario(usuario: str, pwd: str, ip: str|None, dispositivo: str|None):
+    """
+    Llama a un SP que valida credenciales y devuelve:
+      rc (0 ok, 7 bloqueado, 8 credenciales inválidas, etc.),
+      idSesion (INT), rol (NVARCHAR)
+    Ajusta el nombre/parametría al de tu SP real.
+    """
+    sql = """
+    DECLARE @rc INT, @idSesion INT, @rol NVARCHAR(50);
+    EXEC @rc = dbo.sp_LoginUsuario
+         @usuario=%s, @pwd=%s, @ip=%s, @dispositivo=%s,
+         @idSesion=@idSesion OUTPUT, @rol=@rol OUTPUT;
+    SELECT @rc AS rc, @idSesion AS idSesion, @rol AS rol;
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql, [usuario, pwd, ip, dispositivo])
+        rc, id_sesion, rol = cur.fetchone()
+    return int(rc), (int(id_sesion) if id_sesion is not None else None), (rol or "")
