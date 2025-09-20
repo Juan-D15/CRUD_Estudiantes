@@ -14,3 +14,6 @@ def eliminar_page(r):
 
 def listado_page(r): 
     return render(r, "listado.html")
+
+def login_select(r):
+    return render(r, "login_select.html")
