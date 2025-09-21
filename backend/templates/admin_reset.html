@@ -46,9 +46,13 @@
         <p class="subtitle">Restablecer para <b>Administrador</b></p>
 
         <form id="formReset" novalidate>
+          <input type="hidden" id="token" name="token" value="{{ request.GET.t|default:'' }}">
+          <input type="hidden" id="email" name="email" value="{{ request.GET.e|default:'' }}">
+
           <label class="label">Correo (no editable)</label>
           <div class="input-wrap readonly">
-            <input id="emailView" type="text" readonly aria-readonly="true" value="admin@dominio.com">
+            <input id="emailView" type="text" readonly aria-readonly="true"
+                    value="{{ request.GET.e|default:'' }}">
             <span class="icon">
               <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 8l8 5 8-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
             </span>
@@ -109,10 +113,10 @@
       </section>
     </main>
   </div>
-
+<!-- html login en la url -->
   <script>
-    window.LOGIN_BACK_URL = 'admin-login.html';  /* ajusta a tu ruta real */
+    window.LOGIN_BACK_URL = "{% url 'admin_login' %}"; 
   </script>
-  <script src="{% static 'js/reset.js' %}"></script><!-- {% static 'js/reset.js' %} -->
+  <script src="{% static 'js/reset.js' %}"></script>
 </body>
 </html>
