@@ -101,21 +101,60 @@ def eliminar_estudiante(id_est: int):
     return int(rc)
 
 # ============ LOGIN ============
-def login_usuario(usuario: str, pwd: str, ip: str|None, dispositivo: str|None):
+def login_usuario(usuario: str, pwd: str, ip: str | None = None, dispositivo: str | None = None):
     """
-    Llama a un SP que valida credenciales y devuelve:
-      rc (0 ok, 7 bloqueado, 8 credenciales inválidas, etc.),
-      idSesion (INT), rol (NVARCHAR)
-    Ajusta el nombre/parametría al de tu SP real.
+    Llama dbo.sp_LoginUsuario y devuelve (rc, id_sesion).
+    rc: 0 ok, 7 bloqueado, 8 credenciales inválidas, otros = error.
     """
     sql = """
-    DECLARE @rc INT, @idSesion INT, @rol NVARCHAR(50);
+    DECLARE @rc INT, @idSesion INT;
     EXEC @rc = dbo.sp_LoginUsuario
-         @usuario=%s, @pwd=%s, @ip=%s, @dispositivo=%s,
-         @idSesion=@idSesion OUTPUT, @rol=@rol OUTPUT;
-    SELECT @rc AS rc, @idSesion AS idSesion, @rol AS rol;
+         @usuario=%s,
+         @pwd=%s,
+         @ip=%s,
+         @dispositivo=%s,
+         @idSesion=@idSesion OUTPUT;
+    SELECT @rc, @idSesion;
     """
     with connection.cursor() as cur:
         cur.execute(sql, [usuario, pwd, ip, dispositivo])
-        rc, id_sesion, rol = cur.fetchone()
-    return int(rc), (int(id_sesion) if id_sesion is not None else None), (rol or "")
+        rc, id_sesion = cur.fetchone()
+    return int(rc), (id_sesion or 0)
+
+# ============ CODIGO RECUPERACIÓN ============
+def solicitar_codigo_reset(email: str, code: str, ip: str|None, rol: str|None) -> int:
+    sql = """
+    DECLARE @rc INT;
+    EXEC @rc = dbo.sp_Reset_SolicitarCodigo
+      @Correo=%s, @CodigoPlano=%s, @Ip=%s, @Rol=%s;
+    SELECT @rc;
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql, [email, code, ip, rol])
+        rc, = cur.fetchone()
+    return int(rc)
+
+def verificar_codigo_reset(email: str, code: str, rol: str|None):
+    sql = """
+    DECLARE @ok bit, @token nvarchar(200);
+    EXEC dbo.sp_Reset_VerificarCodigo
+      @Correo=%s, @CodigoPlano=%s, @Rol=%s,
+      @Ok=@ok OUTPUT, @Token=@token OUTPUT;
+    SELECT @ok, @token;
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql, [email, code, rol])
+        ok, token = cur.fetchone()
+    return bool(ok), (token or "")
+
+def reset_password_token(token: str, newpwd: str) -> int:
+    sql = """
+    DECLARE @rc INT;
+    EXEC @rc = dbo.sp_Reset_CambiarPassword
+      @Token=%s, @NuevaPwd=%s;
+    SELECT @rc;
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql, [token, newpwd])
+        rc, = cur.fetchone()
+    return int(rc)
