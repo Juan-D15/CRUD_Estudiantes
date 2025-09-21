@@ -17,3 +17,15 @@ def listado_page(r):
 
 def login_select(r):
     return render(r, "login_select.html")
+
+def admin_reset_page(r):
+    return render(r, "admin_reset.html", {
+        "email": r.GET.get("e",""),
+        "token": r.GET.get("t",""),
+    })
+
+def secretario_reset_page(r):
+    return render(r, "secretario_reset.html", {
+        "email": r.GET.get("e",""),
+        "token": r.GET.get("t",""),
+    })
