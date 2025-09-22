@@ -16,8 +16,9 @@ urlpatterns = [
     path("eliminar/", pages.eliminar_page, name="eliminar"),
     path("listado/", pages.listado_page, name="listado"),
 
-    # Selector de rol + vistas de login
+    #  Logins / selección
     path("login/", pages.login_select, name="login_select"),
+    path("login/select", pages.login_select, name="login_select"),
     path("login/admin/", api.login_admin, name="admin_login"),
     path("login/secretario/", api.login_secretario, name="secretario_login"),
     path("logout/", api.logout_view, name="logout"),
