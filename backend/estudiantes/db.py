@@ -104,7 +104,7 @@ def eliminar_estudiante(id_est: int):
 def login_usuario(usuario: str, pwd: str, ip: str | None = None, dispositivo: str | None = None):
     """
     Llama dbo.sp_LoginUsuario y devuelve (rc, id_sesion).
-    rc: 0 ok, 7 bloqueado, 8 credenciales inválidas, otros = error.
+    rc: 0 ok, 7 bloqueado, 8 credenciales inválidas.
     """
     sql = """
     DECLARE @rc INT, @idSesion INT;
@@ -120,6 +120,37 @@ def login_usuario(usuario: str, pwd: str, ip: str | None = None, dispositivo: st
         cur.execute(sql, [usuario, pwd, ip, dispositivo])
         rc, id_sesion = cur.fetchone()
     return int(rc), (id_sesion or 0)
+
+def get_usuario_rol(login_str: str):
+    """
+    Devuelve (idUsuario, rol) buscando por usuario O por correo (case-insensitive).
+    """
+    sql = """
+    SELECT TOP 1 idUsuario, rol
+    FROM dbo.tbUsuario
+    WHERE usuario = %s OR LOWER(correo) = LOWER(%s)
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql, [login_str, login_str])
+        row = cur.fetchone()
+    return (row[0], row[1]) if row else (None, None)
+
+def cerrar_sesion(id_sesion: int, ip: str | None = None, dispositivo: str | None = None):
+    """
+    Cierra sesión en BD (sp_CerrarSesion). Devuelve rc.
+    """
+    sql = """
+    DECLARE @rc INT;
+    EXEC @rc = dbo.sp_CerrarSesion
+         @idSesion=%s,
+         @ip=%s,
+         @dispositivo=%s;
+    SELECT @rc;
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql, [id_sesion, ip, dispositivo])
+        rc, = cur.fetchone()
+    return int(rc)
 
 # ============ CODIGO RECUPERACIÓN ============
 def solicitar_codigo_reset(email: str, code: str, ip: str|None, rol: str|None) -> int:
