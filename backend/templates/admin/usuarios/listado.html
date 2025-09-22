@@ -1,0 +1,149 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Listado de registro de usuarios</title>
+  <link rel="stylesheet" href="{% static 'css/listado-usuarios.css' %}">
+</head>
+<body>
+  <div class="frame">
+
+    <!-- Volver -->
+    <a class="back" href="{% url 'admin_usr_index' %}" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+
+    <!-- Encabezado -->
+    <header class="top">
+      <h1 class="title">Listado de registro de usuarios</h1>
+      <div class="logo" aria-hidden="true">
+        <!-- Icono “grupo de usuarios” -->
+        <svg viewBox="0 0 72 72" width="110" height="110">
+          <circle cx="26" cy="25" r="9" fill="none" stroke="white" stroke-width="3"/>
+          <circle cx="48" cy="28" r="7" fill="none" stroke="white" stroke-width="3"/>
+          <path d="M8 56c4-12 12-18 18-18s14 6 18 18" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <path d="M38 56c3-8 8-12 12-12s9 4 12 12" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">Usuarios registrados</h2>
+          <button id="btnRefrescar" class="btn-icon" aria-label="Actualizar tabla">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 12a9 9 0 0 1 14.9-6.4M21 12a9 9 0 0 1-15 6.9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Filtros -->
+        <form id="formFiltros" class="filters" novalidate>
+          <fieldset>
+            <legend>Fecha</legend>
+            <label class="check">
+              <input type="radio" name="ordenFecha" value="desc" checked>
+              <span>Más reciente</span>
+            </label>
+            <label class="check">
+              <input type="radio" name="ordenFecha" value="asc">
+              <span>Más antiguo</span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Rol</legend>
+            <label class="check">
+              <input type="checkbox" name="rol" value="admin">
+              <span>Administrador</span>
+            </label>
+            <label class="check">
+              <input type="checkbox" name="rol" value="secretaria">
+              <span>Secretario(a)</span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Estado</legend>
+            <label class="check pill pill-green">
+              <input type="checkbox" name="estado" value="activo">
+              <span>Activo</span>
+            </label>
+            <label class="check pill pill-red">
+              <input type="checkbox" name="estado" value="bloqueado">
+              <span>Bloqueado</span>
+            </label>
+          </fieldset>
+
+          <div class="filters-actions">
+            <button type="button" id="btnAplicar" class="btn-primary">Aplicar filtros</button>
+            <button type="button" id="btnLimpiar" class="btn-outline">Borrar filtros</button>
+          </div>
+        </form>
+
+        <!-- Tabla -->
+        <div class="table-wrap">
+          <table class="grid" aria-describedby="tbl-info">
+            <caption id="tbl-info" class="sr-only">Listado general de usuarios</caption>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>USUARIO</th>
+                <th>NOMBRE</th>
+                <th>CORREO</th>
+                <th>ROL</th>
+                <th>ESTADO</th>
+                <th>ÚLT. CAMBIO PWD</th>
+                <th>FECHA CREACIÓN</th>
+                <th>INTENTOS</th>
+                <th>MUST RESET</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyUsuarios">
+              <!-- filas por JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <p id="msg" class="msg" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal detalle -->
+  <div id="overlay" class="overlay hidden" aria-hidden="true"></div>
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-inner">
+      <h3 id="modal-title">Usuario</h3>
+
+      <div class="preview">
+        <div class="row">
+          <span class="k">ID</span>                <span class="v" id="m-id"></span>
+          <span class="k">Usuario</span>           <span class="v" id="m-usuario"></span>
+          <span class="k">Nombre</span>            <span class="v" id="m-nombre"></span>
+          <span class="k">Correo</span>            <span class="v" id="m-correo"></span>
+          <span class="k">Rol</span>               <span class="v" id="m-rol"></span>
+          <span class="k">Estado</span>            <span class="v" id="m-estado"></span>
+          <span class="k">Últ. cambio pwd</span>   <span class="v" id="m-uc"></span>
+          <span class="k">Fecha creación</span>    <span class="v" id="m-fc"></span>
+          <span class="k">Intentos fallidos</span> <span class="v" id="m-if"></span>
+          <span class="k">Must reset</span>        <span class="v" id="m-mr"></span>
+        </div>
+      </div>
+
+      <div class="modal-actions single">
+        <button id="btnCerrar" class="btn-outline btn-back">Volver</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{% static 'js/listado-usuarios.js' %}"></script>
+</body>
+</html>

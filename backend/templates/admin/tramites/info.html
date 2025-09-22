@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Información de la cuenta — Admin</title>
+
+  <!-- Fuente opcional (mismo look) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+  <!-- CSS de esta vista -->
+  <link rel="stylesheet" href="{% static 'css/info-user-admin.css' %}">
+</head>
+<body>
+  <div class="frame">
+
+    <!-- Volver -->
+    <a class="back" href="{% url 'admin_rep_index' %}" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+
+    <!-- Encabezado centrado -->
+    <header class="top">
+      <h1 class="title">Información de la cuenta</h1>
+      <div class="logo" aria-hidden="true">
+        <!-- Ícono de usuario -->
+        <svg viewBox="0 0 64 64" width="100" height="100">
+          <circle cx="32" cy="22" r="10" fill="none" stroke="white" stroke-width="3"/>
+          <path d="M12 54c4-12 12-18 20-18s16 6 20 18" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </header>
+
+    <!-- Panel con “tabla” de datos -->
+    <main class="wrap">
+      <section class="panel">
+        <h2 class="panel-title">Datos de la cuenta</h2>
+
+        <div class="table-wrap">
+          <table class="kv">
+            <tbody>
+              <tr>
+                <th>ID</th>
+                <td><input id="f-id" type="text" value="1" readonly></td>
+              </tr>
+              <tr>
+                <th>Nombre completo</th>
+                <td><input id="f-nombre" type="text" value="Juan Admin" autocomplete="name"></td>
+              </tr>
+              <tr>
+                <th>Usuario</th>
+                <td><input id="f-usuario" type="text" value="admin" autocomplete="username"></td>
+              </tr>
+              <tr>
+                <th>Correo</th>
+                <td><input id="f-correo" type="email" value="admin@dominio.com" autocomplete="email"></td>
+              </tr>
+              <tr>
+                <th>Contraseña</th>
+                <td><input id="f-pass" type="text" value="••••••••" readonly aria-readonly="true" title="No editable desde aquí"></td>
+              </tr>
+              <tr>
+                <th>Rol</th>
+                <td>
+                  <div class="badge">Administrador</div>
+                  <!-- rol no editable -->
+                </td>
+              </tr>
+              <tr>
+                <th>Fecha de creación</th>
+                <td><input id="f-creado" type="text" value="2025-06-01 10:15" readonly></td>
+              </tr>
+              <tr>
+                <th>Estado</th>
+                <td>
+                  <select id="f-estado" class="state state-active">
+                    <option value="activo" selected>Activo</option>
+                    <option value="bloqueado">Bloqueado</option>
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p id="msg" class="msg" role="status" aria-live="polite"></p>
+
+        <div class="panel-actions">
+          <button id="btnPreview" class="btn-primary">Editar</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Overlay + Modal de confirmación -->
+  <div id="overlay" class="overlay hidden" aria-hidden="true"></div>
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-inner">
+      <div class="modal-head">
+        <h3 id="modal-title">Cambios a aplicar</h3>
+        <div class="actions">
+          <button id="btnConfirm" class="btn-primary small">Confirmar</button>
+          <button id="btnCancel" class="btn-outline small">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="preview">
+        <table class="diff">
+          <thead>
+            <tr><th>Campo</th><th>Antes</th><th>Después</th></tr>
+          </thead>
+          <tbody id="diffBody">
+            <!-- filas dinámicas -->
+          </tbody>
+        </table>
+      </div>
+
+      <p class="hint">Revisa los cambios antes de confirmar. Al mostrarse este cuadro, el fondo se opaca para facilitar la lectura.</p>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- JS de esta vista -->
+  <script src="{% static 'js/info-user-admin.js' %}"></script>
+</body>
+</html>

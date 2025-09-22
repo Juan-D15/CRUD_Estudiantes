@@ -1,0 +1,158 @@
+/* ===== Base y fondo ===== */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; color:#fff;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+               Roboto, Ubuntu, Cantarell, "Noto Sans", Arial, "Helvetica Neue",
+               "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol", sans-serif;
+  line-height:1.35;
+  background:
+    radial-gradient(1200px 700px at 70% 0%, #262626 0%, #0f0f10 60%, #0a0a0b 100%),
+    linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.2));
+  background-blend-mode:screen,normal;
+}
+.frame{min-height:100%; border:6px solid rgba(255,255,255,.12); padding-bottom:28px}
+
+/* Volver */
+.back{position:fixed; top:14px; left:18px; display:inline-flex; gap:8px; align-items:center; color:rgba(255,255,255,.9); text-decoration:none; z-index:5; font-size:14px; transition:opacity .15s, transform .15s}
+.back:hover{opacity:.95; transform:translateX(-2px)}
+
+/* Encabezado */
+.top{padding: clamp(22px,4vw,42px) 16px 0; text-align:center}
+.title{margin:0; font-weight:900; font-size: clamp(26px,5vw,44px); letter-spacing:.02em; text-shadow:0 2px 24px rgba(255,255,255,.1)}
+.subtitle{margin:6px 0 18px; color:rgba(255,255,255,.85); font-size: clamp(14px,2.2vw,18px)}
+
+/* ===== Tablero (grid de 12 columnas) ===== */
+.board{
+  width:min(1200px,96vw);
+  margin:16px auto 40px;
+  display:grid;
+  grid-template-columns: repeat(12, minmax(0,1fr));
+  grid-auto-rows: 140px;        /* altura base */
+  gap:22px;
+}
+
+/* Tarjeta base: por defecto ocupa 4 columnas x 2 filas (mediana) */
+.card{
+  grid-column: span 4;
+  grid-row: span 2;
+
+  position:relative; display:flex; flex-direction:column; min-height:100%;
+  border-radius:18px; padding:14px 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.55), 0 12px 28px rgba(0,0,0,.45), 0 0 22px rgba(255,255,255,.08);
+  color:#fff; text-align:left; cursor:pointer; text-decoration:none; outline:none;
+  transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease, filter .18s ease;
+}
+.board:hover .card{opacity:.65; filter:saturate(.9)}
+.card:hover,.card:focus-visible{
+  opacity:1; transform:translateY(-2px);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.9), 0 16px 40px rgba(0,0,0,.55), 0 0 32px rgba(255,255,255,.22);
+}
+
+/* Modificadores según el HTML */
+.card.wide{ grid-column: span 6; grid-row: span 2; } /* grandes de la fila 1 */
+.card.tall{ grid-column: span 4; grid-row: span 2; } /* mismo alto que las pequeñas (boceto) */
+
+/* Cabecera + icono + texto */
+.card-head{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.card h3{margin:0; font-size: clamp(16px,1.8vw,20px); letter-spacing:.04em; font-weight:800}
+.mini{margin:8px 0 0; font-size:13px; color:rgba(255,255,255,.88)}
+
+/* Iconos de las tarjetas */
+.card-ico{width:32px; height:32px; opacity:.95}
+.stroke{fill:none; stroke:#fff; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round}
+.neon{stroke:#b574ff}
+
+/* ===== Overlay + modal genérico ===== */
+.overlay{position:fixed; inset:0; background:rgba(0,0,0,.72); backdrop-filter: blur(6px); z-index:40}
+.modal{position:fixed; inset:0; display:grid; place-items:center; z-index:50}
+.modal-inner{
+  width:min(1100px,96vw); max-height:86vh; overflow:auto;
+  border-radius:22px; padding:16px 16px 18px;
+  background:rgba(0,0,0,.35);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.2), 0 30px 80px rgba(0,0,0,.65), 0 0 36px rgba(255,255,255,.12);
+  transform: scale(.94); opacity:0; transition:transform .18s ease, opacity .18s ease;
+}
+.modal.show .modal-inner{transform:scale(1); opacity:1}
+
+.modal-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
+.modal-head h3{margin:0; font-size: clamp(20px,2.6vw,28px); font-weight:900; letter-spacing:.03em}
+.actions{display:flex; gap:10px}
+.btn-outline{
+  border-radius:14px; padding:10px 14px;
+  background:transparent; color:#fff; border:2px solid rgba(255,255,255,.9); font-weight:800; cursor:pointer;
+  transition:all .16s ease;
+}
+.btn-outline:hover{background:#0f0f10; box-shadow:0 0 20px rgba(255,255,255,.25)}
+.btn-outline.ghost{border-color:rgba(255,255,255,.55)}
+
+.btn-primary{
+  border-radius:14px; padding:10px 14px; border:none;
+  background:#fff; color:#111; font-weight:900; cursor:pointer;
+  box-shadow: inset 0 0 0 2px #fff, 0 0 24px rgba(255,255,255,.24);
+  transition:all .16s ease;
+}
+.btn-primary:hover{background:#0f0f10; color:#fff}
+
+.extra-actions{display:flex; gap:10px; margin-top:10px}
+.hidden{display:none}
+
+/* Tablas dentro del modal */
+.table-wrap{overflow:auto}
+.grid{
+  width:100%; border-collapse:separate; border-spacing:0;
+  background:rgba(255,255,255,.02); border-radius:14px; overflow:hidden;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 8px 24px rgba(0,0,0,.45);
+}
+.grid thead th{
+  text-align:left; font-weight:800; letter-spacing:.05em; font-size:13px;
+  padding:12px 14px; text-transform:uppercase; color:rgba(255,255,255,.9);
+  background:rgba(255,255,255,.05); border-bottom:1px solid rgba(255,255,255,.25);
+}
+.grid tbody td{
+  padding:12px 14px; border-bottom:1px solid rgba(255,255,255,.15); border-right:1px solid rgba(255,255,255,.12)
+}
+.grid tbody tr:last-child td{border-bottom:none}
+.grid th:last-child,.grid td:last-child{border-right:none}
+
+/* Badges y toggles (por si los usas en tablas) */
+.badge{padding:.16rem .5rem; border-radius:999px; font-size:12px; font-weight:800; box-shadow: inset 0 0 0 1px rgba(255,255,255,.35)}
+.badge.green{color:#22c55e; box-shadow: inset 0 0 0 1px rgba(34,197,94,.9)}
+.badge.red{color:#ef4444; box-shadow: inset 0 0 0 1px rgba(239,68,68,.9)}
+.toggle{
+  display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
+  border:2px solid rgba(255,255,255,.8); cursor:pointer; font-weight:800; transition:all .16s ease
+}
+.toggle.active{border-color:#22c55e; box-shadow: inset 0 0 0 1px rgba(34,197,94,.8)}
+.toggle.block{border-color:#ef4444; box-shadow: inset 0 0 0 1px rgba(239,68,68,.85)}
+.toggle:hover{transform:translateY(-1px)}
+
+/* Toast / mensajes */
+.toast{
+  position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+  padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.55); color:#fff; font-weight:700;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.25), 0 10px 30px rgba(0,0,0,.6);
+  z-index:60; opacity:0; animation:show .2s ease forwards
+}
+@keyframes show{to{opacity:1}}
+
+/* ===== Responsivo ===== */
+@media (max-width: 1100px){
+  .board{ grid-template-columns: repeat(6, minmax(0,1fr)); grid-auto-rows: 140px; }
+  .card{ grid-column: span 6; grid-row: span 2; } /* una por fila */
+  .card.wide{ grid-column: span 6; }
+}
+@media (max-width: 640px){
+  .board{ grid-template-columns: 1fr; grid-auto-rows: auto; }
+  .card{ grid-column: 1; grid-row:auto; min-height:160px; }
+}
+
+/* Charts */
+.charts{display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:6px}
+.chart{padding:14px; border-radius:16px; background:rgba(255,255,255,.02); box-shadow: inset 0 0 0 1px rgba(255,255,255,.18)}
+.chart h4{margin:0 0 8px; font-weight:800; letter-spacing:.04em}
+.donut-svg .bg{stroke:rgba(255,255,255,.18)}
+.donut-svg .val{stroke:#b574ff; filter: drop-shadow(0 0 8px rgba(181,116,255,.6))}
+.bar-svg .bar{fill:#b574ff}

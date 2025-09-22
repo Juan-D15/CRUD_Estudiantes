@@ -1,0 +1,108 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Gestión de usuarios — Eliminar</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+  <!-- Hoja específica de esta vista -->
+  <link rel="stylesheet" href="{% static 'css/eliminar-usuario.css' %}">
+</head>
+<body>
+  <div class="frame">
+
+    <!-- Volver -->
+    <a class="back" href="{% url 'admin_usr_index' %}" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+
+    <div class="container">
+      <!-- Lado izquierdo -->
+      <aside class="left">
+        <h1 class="brand-text">
+          Gestión de<br>usuarios
+        </h1>
+
+        <!-- Icono usuarios -->
+        <div class="brand-logo" aria-label="Icono usuarios" role="img">
+          <svg viewBox="0 0 64 64" width="120" height="120" aria-hidden="true">
+            <circle cx="22" cy="22" r="10" fill="none" stroke="white" stroke-width="3"/>
+            <circle cx="44" cy="24" r="8"  fill="none" stroke="white" stroke-width="3"/>
+            <path d="M6 48c4-10 11-15 16-15s12 5 16 15"
+                  fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+            <path d="M36 44c2-6 6-9 10-9s7 3 10 9"
+                  fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </aside>
+
+      <!-- Lado derecho: tabla -->
+      <main class="right">
+        <section class="panel">
+          <h2 class="panel-title">Eliminar Usuario.</h2>
+
+          <div class="table-wrap">
+            <table class="grid" aria-describedby="tbl-desc">
+              <caption id="tbl-desc" class="sr-only">Listado de usuarios</caption>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>USUARIO</th>
+                  <th>CORREO</th>
+                  <th>ROL</th>
+                  <th>FECHA DE REGISTRO</th>
+                  <th class="col-actions">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyUsuarios">
+                <!-- filas renderizadas por JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <p id="msg" class="msg" role="status" aria-live="polite"></p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Overlay + Modal -->
+  <div id="overlay" class="overlay hidden" aria-hidden="true"></div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-inner">
+      <h3 id="modal-title">¿Eliminar este usuario?</h3>
+
+      <div class="preview">
+        <div class="row">
+          <span class="k">ID</span><span class="v" id="m-id"></span>
+          <span class="k">Usuario</span><span class="v" id="m-usuario"></span>
+          <span class="k">Correo</span><span class="v" id="m-correo"></span>
+          <span class="k">Rol</span><span class="v" id="m-rol"></span>
+          <span class="k">Fecha Reg.</span><span class="v" id="m-fecha"></span>
+        </div>
+      </div>
+
+      <p class="warn">Esta acción es <b>irreversible</b>.</p>
+
+      <div class="modal-actions">
+        <button id="btnCancelar" class="btn-outline btn-cancel" type="button">Cancelar</button>
+        <button id="btnEliminar" class="btn-outline btn-danger" type="button">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden">Mensaje</div>
+
+  <script src="{% static 'js/eliminar-usuario.js' %}"></script>
+</body>
+</html>

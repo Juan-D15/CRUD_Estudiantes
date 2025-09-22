@@ -1,0 +1,151 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Gestión de Usuarios — Editar</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/editar-usuario.css' %}">
+
+  <!-- (opcional) tu hoja global -->
+  <!-- <link rel="stylesheet" href="styles.css"> -->
+
+  <!-- CSS específico de esta vista -->
+</head>
+<body>
+  <div class="frame">
+
+    <!-- Volver -->
+    <a class="back" href="{% url 'admin_usr_index' %}" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+
+    <div class="grid">
+      <!-- Lado izquierdo: título + icono -->
+      <section class="side">
+        <h1 class="title">Gestión de Usuarios</h1>
+        <p class="subtitle">Busca un <b>ID</b> y edita los datos del usuario encontrado.</p>
+
+        <!-- Icono de usuarios -->
+        <svg class="users-logo" viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="22" cy="22" r="9" fill="none" stroke="white" stroke-width="2"/>
+          <circle cx="45" cy="24" r="7" fill="none" stroke="white" stroke-width="2"/>
+          <path d="M6 48c4-10 11-15 16-15s12 5 16 15" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <path d="M35 45c2-6 6-9 10-9s7 3 10 9" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </section>
+
+      <!-- Lado derecho: buscar + editar -->
+      <section class="stack">
+
+        <!-- Buscar -->
+        <div class="card">
+          <h2>Buscar Usuario <span class="small">(por ID)</span></h2>
+          <div class="input-wrap">
+            <input id="idBuscar" type="number" min="1" placeholder="ID de usuario">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M20 20l-3.5-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </div>
+          <div class="actions">
+            <button id="btnBuscar" class="btn btn-primary" type="button">Buscar</button>
+          </div>
+          <p id="msgBuscar" class="tip"></p>
+        </div>
+
+        <!-- Editar (oculto hasta encontrar) -->
+        <div id="editCard" class="card edit hidden" aria-live="polite">
+          <h2>Editar</h2>
+
+          <div class="input-wrap">
+            <input id="usuario" type="text" placeholder="Usuario">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M4 20c2.5-4 6-6 8-6s5.5 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </div>
+
+          <div class="input-wrap">
+            <input id="nombre" type="text" placeholder="Nombre completo">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M16 11a4 4 0 11-8 0 4 4 0 018 0z" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M3 20c2.6-5 7-7 9-7s6.4 2 9 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </div>
+
+          <div class="input-wrap">
+            <input id="correo" type="email" placeholder="correo@dominio.com">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M3 8l9 6 9-6" fill="none" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+          </div>
+
+          <div class="select-wrap" id="rolWrap">
+            <select id="rol" aria-label="Rol">
+              <option value="secretaria">secretaria</option>
+              <option value="admin">admin</option>
+            </select>
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 3l3 6 6 .9-4.5 4.2L17 21l-5-3-5 3 1.5-6.9L3 9.9 9 9l3-6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+
+          <div class="select-wrap estado-wrap" id="estadoWrap">
+            <select id="estado" aria-label="Estado">
+              <option value="activo">activo</option>
+              <option value="bloqueado">bloqueado</option>
+            </select>
+            <span class="estado-chip" id="estadoChip">activo</span>
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="3.5" y="7" width="17" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 7V6a4 4 0 118 0v1" fill="none" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+          </div>
+
+          <div class="actions">
+            <button id="btnActualizar" class="btn btn-primary" type="button">Actualizar</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal confirm rol admin -->
+  <div id="overlay" class="overlay" hidden></div>
+  <div id="modalRol" class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" aria-describedby="mDesc" hidden>
+    <h3 id="mTitle">¿Pasar este usuario a administrador?</h3>
+    <p id="mDesc">Este usuario tendrá acceso a todas las características y opciones del portal.</p>
+    <div class="row">
+      <button id="mYes" class="btn btn-yes" type="button">Aceptar</button>
+      <button id="mNo" class="btn btn-no" type="button">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" hidden>Mensaje</div>
+
+  <!-- JS específico -->
+  <script src="{% static 'js/editar-usuario.js' %}"></script>
+</body>
+</html>

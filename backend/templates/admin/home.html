@@ -1,0 +1,151 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Portal Administrador</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/home-admin.css' %}">
+</head>
+<body>
+  <div class="frame">
+
+    <!-- Volver (muestra confirmación de cierre de sesión) -->
+    <button class="back" id="btnBack" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Cerrar Sesión</span>
+    </button>
+
+    <!-- Avatar Admin / menú de usuario -->
+    <button class="avatar" id="btnUser" aria-label="Cuenta administrador">
+      <svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true">
+        <!-- persona -->
+        <circle cx="32" cy="17" r="8" class="stroke" />
+        <path d="M18 33c3-6 9-7 14-7s11 1 14 7" class="stroke" />
+        <!-- laptop -->
+        <rect x="18.5" y="34.5" width="27" height="16" rx="2.5" class="stroke"/>
+        <rect x="21.5" y="37" width="21" height="11" rx="1.5" class="stroke"/>
+        <path d="M16 52h32" class="stroke"/>
+      </svg>
+    </button>
+
+    <div class="user-menu" id="userMenu" role="dialog" aria-label="Información de cuenta">
+        <div class="u-row"><span class="k">Usuario</span>
+          <span class="v" id="uUsuario">{{ userinfo.usuario|default:request.session.usuario }}</span>
+        </div>
+        <div class="u-row"><span class="k">Correo</span>
+          <span class="v" id="uCorreo">{{ userinfo.correo|default:"" }}</span>
+        </div>
+        <div class="u-row"><span class="k">Rol</span>
+          <span class="v" id="uCorreo">{{ userinfo.rol|default:"" }}</span>
+        </div>
+        <div class="u-row"><span class="k">Registro</span>
+          <span class="v" id="uFecha">{{ userinfo.fechaCreacion|date:"Y-m-d" }}</span>
+        </div>
+      <div class="u-actions">
+        <button class="btn-outline warn" id="uChange">Cambiar contraseña</button>
+        <button class="btn-outline" id="uClose">Volver</button>
+        <button class="btn-outline danger" id="uLogout">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <main class="wrap">
+    <br>
+      <h1 class="title">Portal Administrador</h1>
+      <br>
+      <br>
+      <br>
+      <!-- Tarjetas -->
+      <div class="cards" id="cards">
+        <!-- Gestión Estudiantes -->
+        <!-- COPIAR AQUI LA RUTA DEL INDEX PRINCIPAL DEL PROYECTO ANTERIOR -->
+        <a class="card" href="{% url 'admin_est_index' %}">
+          <h3>Gestión<br>Estudiantes</h3>
+          <svg viewBox="0 0 64 64" class="icon-draw" aria-hidden="true">
+            <path class="stroke" d="M8 24l24-8 24 8-24 8-24-8z"/>
+            <path class="stroke" d="M14 28v10c0 3 10 9 18 9s18-6 18-9V28"/>
+            <path class="stroke" d="M22 34l10 3 10-3"/>
+            <path class="stroke" d="M12 26l20 6 20-6"/>
+          </svg>
+        </a>
+
+        <!-- Gestión Usuarios -->
+        <a class="card" href="{% url 'admin_usr_index' %}">
+          <h3>Gestión<br>Usuarios</h3>
+          <svg viewBox="0 0 64 64" class="icon-draw" aria-hidden="true">
+            <circle class="stroke" cx="22" cy="22" r="8"/>
+            <path class="stroke" d="M8 44c3-8 9-12 14-12s11 4 14 12"/>
+            <circle class="stroke" cx="44" cy="22" r="6"/>
+            <path class="stroke" d="M36 44c2-6 7-9 11-9 3 0 7 2 9 9"/>
+          </svg>
+        </a>
+
+        <!-- Trámites -->
+        <a class="card" href="{% url 'admin_rep_index' %}">
+            <h3>Trámites</h3>
+            <!-- Tuerca (hexágono + círculo interior) -->
+            <svg viewBox="0 0 64 64" class="icon-draw" aria-hidden="true">
+                <!-- hexágono exterior -->
+                <path class="stroke wide"
+                    d="M32 9
+                        L49 19
+                        L49 45
+                        L32 55
+                        L15 45
+                        L15 19 Z"
+                    vector.effect="non-scaling-stroke"
+                    stroke-linejoin="round"/>
+                <!-- círculo interior -->
+                <circle class="stroke wide" cx="32" cy="32" r="8"
+                />
+            </svg>
+        </a>
+
+      </div>
+    </main>
+
+    <!-- Barra inferior (dock) -->
+    <nav class="dock">
+      <a class="dock-item" href="{% url 'admin_est_index' %}" aria-label="Estudiantes">
+        <svg viewBox="0 0 64 64" class="dock-svg" aria-hidden="true">
+          <path d="M8 24l24-8 24 8-24 8-24-8z" class="stroke"/>
+          <path d="M14 28v10c0 3 10 9 18 9s18-6 18-9V28" class="stroke"/>
+        </svg>
+      </a>
+      <a class="dock-item" href="{% url 'admin_usr_index' %}" aria-label="Usuarios">
+        <svg viewBox="0 0 64 64" class="dock-svg" aria-hidden="true">
+          <circle cx="22" cy="22" r="8" class="stroke"/>
+          <circle cx="44" cy="22" r="6" class="stroke"/>
+          <path d="M8 44c3-8 9-12 14-12s11 4 14 12" class="stroke"/>
+        </svg>
+      </a>
+      <a class="dock-item" href="{% url 'admin_rep_index' %}" aria-label="Trámites">
+        <!-- Tuerca en mini -->
+        <svg viewBox="0 0 64 64" class="dock-svg" aria-hidden="true">
+            <path class="stroke"
+                d="M32 11
+                    L47 20
+                    L47 44
+                    L32 53
+                    L17 44
+                    L17 20  Z"
+                vector-effect="non-scaling-stroke"
+                stroke-linejoin="round"/>
+            <circle class="stroke" cx="32" cy="32" r="6"/>
+        </svg>
+      </a>
+    </nav>
+  </div>
+
+  <script>
+    // rutas para confirmaciones
+    window.ADMIN_LOGIN_URL = "{% url 'admin_login' %}";
+    window.ADMIN_RESET_URL = "{% url 'admin_reset_page' %}";
+  </script>
+  <script src="{% static 'js/home-admin.js' %}"></script>
+</body>
+</html>

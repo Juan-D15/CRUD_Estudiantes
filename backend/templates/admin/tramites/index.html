@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portal de control de gestiones</title>
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+</head>
+<body>
+  <div class="frame">
+
+    <!-- Volver (simple, sin cerrar sesión) -->
+    <a class="back" href="{% url 'admin_home' %}" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+
+    <!-- Contenido centrado -->
+    <div class="content">
+      <header class="hero">
+        <h1 class="title">BIENVENIDO</h1>
+        <p class="subtitle">Portal de control de gestiones</p>
+
+        <!-- Icono de Hojas (stack) bajo el subtítulo -->
+        <div class="logo" aria-label="Gestiones" role="img">
+          <svg viewBox="0 0 64 64" width="72" height="72" aria-hidden="true">
+            <!-- hoja posterior -->
+            <rect x="12" y="14" width="34" height="44" rx="2.5"
+                  fill="none" stroke="white" stroke-width="2"/>
+            <!-- hoja superior con esquina doblada -->
+            <path d="M22 10h22l8 8v34a2.5 2.5 0 0 1-2.5 2.5H22a2.5 2.5 0 0 1-2.5-2.5V12.5A2.5 2.5 0 0 1 22 10z"
+                  fill="none" stroke="white" stroke-width="2"/>
+            <path d="M44 10v8h8" fill="none" stroke="white" stroke-width="2"/>
+            <!-- líneas de texto -->
+            <path d="M26 26h18M26 32h18M26 38h18M26 44h14"
+                  stroke="white" stroke-width="2" />
+          </svg>
+        </div>
+      </header>
+
+      <!-- ...cabecera y hero iguales... -->
+
+    <main>
+    <!-- Nota: añadí la clase cards--3 para centrar y usar 3 columnas -->
+    <section class="cards cards--3" aria-label="Acciones principales">
+        <!-- 1) Generar reporte -->
+        <a class="card" href="gestion-transacciones.html" title="Generar reporte de estudiantes">
+        <h3>GENERAR<br>REPORTE DEl<br>PORTAL</portal></h3>
+        <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+            <rect x="4" y="4" width="11" height="16" rx="1.6"
+                    fill="none" stroke="white" stroke-width="1.6"/>
+            <path d="M8 8h5M8 11h5M8 14h5M8 17h3"
+                    stroke="white" stroke-width="1.6"/>
+            <rect x="9.5" y="6.5" width="10" height="14" rx="1.4"
+                    fill="none" stroke="white" stroke-width="1.4" opacity=".8"/>
+            </svg>
+        </span>
+        </a>
+
+        <!-- 2) Editar información -->
+        <a class="card" href="{% url 'admin_usr_info' %}" title="Editar información de la cuenta">
+        <h3>EDITAR<br>INFORMACIÓN<br>DE LA CUENTA</h3>
+        <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+            <path d="M7 7a7 7 0 0 1 11 2" fill="none" stroke="white" stroke-width="1.6"
+                    stroke-linecap="round"/>
+            <path d="M18 9V5l-3 2" fill="none" stroke="white" stroke-width="1.6"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M17 17a7 7 0 0 1-11-2" fill="none" stroke="white" stroke-width="1.6"
+                    stroke-linecap="round"/>
+            <path d="M6 15v4l3-2" fill="none" stroke="white" stroke-width="1.6"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </span>
+        </a>
+
+        <!-- 3) Cambiar contraseña -->
+        <a class="card" href="{% url 'admin_reset_page' %}" title="Cambiar contraseña">
+        <h3>CAMBIAR<br>CONTRASEÑA</h3>
+        <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+            <rect x="4" y="11" width="16" height="9" rx="2"
+                    fill="none" stroke="white" stroke-width="1.8"/>
+            <path d="M8 11V8a4 4 0 0 1 8 0v3"
+                    fill="none" stroke="white" stroke-width="1.8"/>
+            </svg>
+        </span>
+        </a>
+    </section>
+    </main>
+
+    </div>
+
+    <!-- Dock inferior: tuerca activa -->
+    <nav class="dock">
+      <a class="dock-item" href="{% url 'admin_est_index' %}" aria-label="Estudiantes">
+        <svg viewBox="0 0 64 64" class="dock-svg" aria-hidden="true">
+          <path d="M8 24l24-8 24 8-24 8-24-8z" class="stroke"/>
+          <path d="M14 28v10c0 3 10 9 18 9s18-6 18-9V28" class="stroke"/>
+        </svg>
+      </a>
+
+      <a class="dock-item" href="{% url 'admin_usr_index' %}" aria-label="Usuarios">
+        <svg viewBox="0 0 64 64" class="dock-svg" aria-hidden="true">
+          <circle cx="22" cy="22" r="8" class="stroke"/>
+          <circle cx="44" cy="22" r="6" class="stroke"/>
+          <path d="M8 44c3-8 9-12 14-12s11 4 14 12" class="stroke"/>
+        </svg>
+      </a>
+
+      <a class="dock-item is-active" aria-current="page"
+         href="{% url 'admin_rep_index' %}" aria-label="Trámites">
+        <!-- Tuerca mini (hex + círculo) -->
+        <svg viewBox="0 0 64 64" class="dock-svg" aria-hidden="true">
+          <path class="stroke"
+                d="M32 11 L47 20 L47 44 L32 53 L17 44 L17 20 Z"
+                vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+          <circle class="stroke" cx="32" cy="32" r="6"/>
+        </svg>
+      </a>
+    </nav>
+
+  </div>
+</body>
+</html>

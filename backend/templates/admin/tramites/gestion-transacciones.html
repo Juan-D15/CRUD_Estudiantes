@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Gestión de Transacciones y Reportes</title>
+  <link rel="stylesheet" href="C:\Users\gandh\OneDrive\Escritorio\CUNOR\8VO SEMESTRE\base de datos 2\proyecto control de estudiantes\templates\static\css\gestion-transacciones.css">
+</head>
+<body>
+  <div class="frame">
+
+    <!-- Volver -->
+    <a class="back" href="index-admin-tramites.html" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+
+    <header class="top">
+      <h1 class="title">Módulo de Reportes y Usabilidad</h1>
+    </header>
+
+    <!-- Tablero -->
+    <main class="board">
+      <!-- Fila 1 -->
+      <button class="card wide" data-modal="accesos">
+        <div class="card-head">
+          <h3>Reporte de Accesos</h3>
+          <svg class="card-ico" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M12 18h26a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V22a4 4 0 0 1 4-4z" class="stroke"/>
+            <path d="M32 24v-4a8 8 0 1 1 16 0v4" class="stroke"/>
+          </svg>
+        </div>
+        <p class="mini">Intentos de ingreso: usuario, fecha/hora, estado.</p>
+      </button>
+
+      <button class="card wide" data-modal="trans">
+        <div class="card-head">
+          <h3>Reporte de Transacciones</h3>
+          <svg class="card-ico" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M10 20h44M14 24l-4-4 4-4" class="stroke"/>
+            <path d="M54 44H10M50 48l4-4-4-4" class="stroke"/>
+          </svg>
+        </div>
+        <p class="mini">Altas/bajas de usuarios y estudiantes, cambios de contraseña.</p>
+      </button>
+
+      <!-- Fila 2 -->
+      <button class="card" data-modal="usuarios">
+        <div class="card-head">
+          <h3>Usuarios del Sistema</h3>
+          <svg class="card-ico" viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="26" cy="24" r="9" class="stroke"/>
+            <circle cx="46" cy="26" r="7" class="stroke"/>
+            <path d="M8 52c4-12 12-18 18-18s14 6 18 18" class="stroke"/>
+          </svg>
+        </div>
+        <p class="mini">Datos personales, rol y estado (bloqueo/desbloqueo).</p>
+      </button>
+
+      <a class="card" href="filtros-busqueda.html">
+        <div class="card-head">
+          <h3>Filtros de Búsqueda</h3>
+          <svg class="card-ico" viewBox="0 0 64 64" aria-hidden="true">
+            <ellipse cx="28" cy="22" rx="16" ry="8" class="stroke"/>
+            <path d="M12 22v15c0 4 7 8 16 8s16-4 16-8V22" class="stroke"/>
+            <circle cx="46" cy="44" r="6" class="stroke"/>
+            <path d="M51 49l6 6" class="stroke"/>
+          </svg>
+        </div>
+        <p class="mini">Usuario, rango de fechas, acción y estado combinables.</p>
+      </a>
+
+      <button class="card" data-modal="uso">
+        <div class="card-head">
+          <h3>Promedio de Uso</h3>
+          <svg class="card-ico" viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="22" cy="32" r="10" class="stroke"/>
+            <path d="M22 22a10 10 0 0 1 0 20" class="stroke neon"/>
+            <rect x="38" y="28" width="18" height="2.5" rx="1" class="stroke neon"/>
+            <rect x="38" y="33" width="12" height="2.5" rx="1" class="stroke neon"/>
+            <rect x="38" y="38" width="16" height="2.5" rx="1" class="stroke neon"/>
+          </svg>
+        </div>
+        <p class="mini">Donas por rol y barras por usuario (minutos).</p>
+      </button>
+
+      <!-- Fila 3 -->
+      <button class="card" data-modal="ultimas">
+        <div class="card-head">
+          <h3>Últimas Conexiones</h3>
+          <svg class="card-ico" viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="22" cy="22" r="10" class="stroke"/>
+            <path d="M22 16v8l6 3" class="stroke"/>
+          </svg>
+        </div>
+        <p class="mini">Último acceso exitoso por usuario.</p>
+      </button>
+
+      <button class="card tall" data-modal="fallidos">
+        <div class="card-head">
+          <h3>Intentos fallidos de login</h3>
+          <svg class="card-ico" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M12 18h40v28H12z" class="stroke"/>
+            <path d="M24 22l16 16M40 22L24 38" class="stroke"/>
+          </svg>
+        </div>
+        <p class="mini">Genera .log y exporta a PDF para auditoría.</p>
+      </button>
+
+      <button class="card" data-modal="export">
+        <div class="card-head">
+          <h3>Exportar</h3>
+          <svg class="card-ico" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M16 44h32M32 12v26M24 22l8-8 8 8" class="stroke"/>
+          </svg>
+        </div>
+        <p class="mini">PDF o Excel con las secciones agregadas al reporte.</p>
+      </button>
+    </main>
+  </div>
+
+  <!-- Overlay + Modal genérico -->
+  <div id="overlay" class="overlay hidden" aria-hidden="true"></div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-inner">
+      <div class="modal-head">
+        <h3 id="modal-title"></h3>
+        <div class="actions">
+          <button id="btnAddReport" class="btn-outline">Agregar al reporte</button>
+          <button id="btnClose" class="btn-outline ghost" aria-label="Cerrar">Cerrar ✕</button>
+        </div>
+      </div>
+
+      <!-- Zona dinámica -->
+      <div id="modal-body" class="modal-body"></div>
+
+      <!-- Acciones extra (para fallidos) -->
+      <div id="extra-actions" class="extra-actions hidden"></div>
+    </div>
+  </div>
+
+  <script src="C:\Users\gandh\OneDrive\Escritorio\CUNOR\8VO SEMESTRE\base de datos 2\proyecto control de estudiantes\templates\static\js\gestion-transacciones.js"></script>
+</body>
+</html>
