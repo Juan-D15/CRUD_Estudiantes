@@ -7,6 +7,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.urls import reverse
 from .security import verify_recaptcha  
+from utils.guards import require_role
 import json
 import secrets
 
@@ -20,6 +21,9 @@ from .db import (
     solicitar_codigo_reset,  # crea registro y guarda hash del código
     verificar_codigo_reset,  # valida email+codigo -> retorna token
     reset_password_token,    # cambia contraseña por token
+    login_usuario, 
+    get_usuario_rol, 
+    cerrar_sesion,
 )
 
 
@@ -37,6 +41,7 @@ def _json_body(request):
 # API: Listar
 # GET /api/estudiantes
 # ---------------------------
+@require_role("admin", "secretaria")
 @require_http_methods(["GET"])
 def api_listar(request):
     data = listar_estudiantes()
@@ -47,6 +52,7 @@ def api_listar(request):
 # API: Detalle por id
 # GET /api/estudiantes/<id>
 # ---------------------------
+@require_role("admin", "secretaria")
 @require_http_methods(["GET"])
 def api_detalle(request, id_est):
     row = obtener_estudiante_por_id(id_est)
@@ -60,6 +66,7 @@ def api_detalle(request, id_est):
 # POST /api/estudiantes/create
 # body: {nombres, apellidos, correo, telefono}
 # ---------------------------
+@require_role("admin", "secretaria")
 @require_http_methods(["POST"])
 def api_crear(request):
     data = _json_body(request)
@@ -77,6 +84,7 @@ def api_crear(request):
 # PUT /api/estudiantes/<id>/update
 # body: {nombres, apellidos, correo, telefono}
 # ---------------------------
+@require_role("admin")
 @require_http_methods(["PUT"])
 def api_actualizar(request, id_est):
     data = _json_body(request)
@@ -94,6 +102,7 @@ def api_actualizar(request, id_est):
 # API: Eliminar
 # DELETE /api/estudiantes/<id>/delete
 # ---------------------------
+@require_role("admin")
 @require_http_methods(["DELETE"])
 def api_eliminar(request, id_est):
     rc = eliminar_estudiante(id_est)
@@ -135,8 +144,16 @@ def login_secretario(request):
     return render(request, "secretario_login.html")
 
 def logout_view(request):
+    id_sesion = request.session.get("id_sesion")
+    ip = request.META.get("REMOTE_ADDR", "")
+    if id_sesion:
+        try:
+            cerrar_sesion(id_sesion, ip, "web-logout")
+        except Exception:
+            pass
     request.session.flush()
     return redirect("login_select")
+
 
 # ---------- AUTH: Recuperación Contraseña ----------
 def _role_from_request(request):
@@ -205,3 +222,57 @@ def reset_commit(request):
     elif rc == 8:
         return JsonResponse({"ok": False, "msg": "Token inválido/expirado."}, status=400)
     return JsonResponse({"ok": False, "msg": f"Error {rc} al actualizar."}, status=400)
+
+def _bloqueo_portal_incorrecto(request, template):
+    # Mensaje neutro para no revelar detalles
+    return render(request, template, {"error": "No autorizado en este portal. Usa el acceso correcto."})
+
+def login_admin(request):
+    if request.method == "POST":
+        login_str = (request.POST.get("usuario") or "").strip()
+        pwd = request.POST.get("password") or ""
+        ip = request.META.get("REMOTE_ADDR", "")
+        rc, id_sesion = login_usuario(login_str, pwd, ip, "web-admin")
+
+        if rc == 0:
+            _, rol = get_usuario_rol(login_str)
+            if rol != "admin":
+                if id_sesion:
+                    cerrar_sesion(id_sesion, ip, "portal-mismatch")
+                return _bloqueo_portal_incorrecto(request, "admin_login.html")
+
+            # OK: es admin en portal admin
+            request.session["id_sesion"] = id_sesion
+            request.session["usuario_login"] = login_str
+            request.session["rol"] = "admin"
+            return redirect("home")
+
+        msg = "Usuario bloqueado." if rc == 7 else ("Usuario o contraseña incorrectos." if rc == 8 else "Error al iniciar sesión.")
+        return render(request, "admin_login.html", {"error": msg})
+
+    return render(request, "admin_login.html")
+
+def login_secretario(request):
+    if request.method == "POST":
+        login_str = (request.POST.get("usuario") or "").strip()
+        pwd = request.POST.get("password") or ""
+        ip = request.META.get("REMOTE_ADDR", "")
+        rc, id_sesion = login_usuario(login_str, pwd, ip, "web-secretaria")
+
+        if rc == 0:
+            _, rol = get_usuario_rol(login_str)
+            if rol != "secretaria":
+                if id_sesion:
+                    cerrar_sesion(id_sesion, ip, "portal-mismatch")
+                return _bloqueo_portal_incorrecto(request, "secretario_login.html")
+
+            # OK: es secretaria en portal secretaria
+            request.session["id_sesion"] = id_sesion
+            request.session["usuario_login"] = login_str
+            request.session["rol"] = "secretaria"
+            return redirect("home")
+
+        msg = "Usuario bloqueado." if rc == 7 else ("Usuario o contraseña incorrectos." if rc == 8 else "Error al iniciar sesión.")
+        return render(request, "secretario_login.html", {"error": msg})
+
+    return render(request, "secretario_login.html")

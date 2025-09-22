@@ -1,17 +1,23 @@
 from django.shortcuts import render
+from utils.guards import require_role  # <-- NUEVO
 
+@require_role("admin", "secretaria")
 def home_page(r): 
     return render(r, "home.html")
 
+@require_role("admin", "secretaria")
 def registrar_page(r): 
     return render(r, "registrar.html")
 
+@require_role("admin")  # solo admin
 def actualizar_page(r): 
     return render(r, "actualizar.html")
 
+@require_role("admin")  # solo admin
 def eliminar_page(r): 
     return render(r, "eliminar.html")
 
+@require_role("admin", "secretaria")
 def listado_page(r): 
     return render(r, "listado.html")
 
