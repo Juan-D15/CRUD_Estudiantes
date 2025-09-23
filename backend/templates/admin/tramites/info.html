@@ -45,23 +45,23 @@
             <tbody>
               <tr>
                 <th>ID</th>
-                <td><input id="f-id" type="text" value="1" readonly></td>
+                <td><input id="f-id" type="text"  readonly></td>
               </tr>
               <tr>
                 <th>Nombre completo</th>
-                <td><input id="f-nombre" type="text" value="Juan Admin" autocomplete="name"></td>
+                <td><input id="f-nombre" type="text"  autocomplete="name"></td>
               </tr>
               <tr>
                 <th>Usuario</th>
-                <td><input id="f-usuario" type="text" value="admin" autocomplete="username"></td>
+                <td><input id="f-usuario" type="text"  autocomplete="username"></td>
               </tr>
               <tr>
                 <th>Correo</th>
-                <td><input id="f-correo" type="email" value="admin@dominio.com" autocomplete="email"></td>
+                <td><input id="f-correo" type="email"  autocomplete="email"></td>
               </tr>
               <tr>
                 <th>Contraseña</th>
-                <td><input id="f-pass" type="text" value="••••••••" readonly aria-readonly="true" title="No editable desde aquí"></td>
+                <td><input id="f-pass" type="text" value="*******"  readonly aria-readonly="true" title="No editable desde aquí"></td>
               </tr>
               <tr>
                 <th>Rol</th>
@@ -72,7 +72,7 @@
               </tr>
               <tr>
                 <th>Fecha de creación</th>
-                <td><input id="f-creado" type="text" value="2025-06-01 10:15" readonly></td>
+                <td><input id="f-creado" type="text"  readonly></td>
               </tr>
               <tr>
                 <th>Estado</th>
@@ -125,7 +125,10 @@
 
   <!-- Toast -->
   <div id="toast" class="toast hidden"></div>
-
+  <div id="page" data-user-id="{{ id_usr|default:'0' }}"></div>
+    <script>
+      window.CURRENT_USER_ID = Number(document.getElementById('page').dataset.userId || 0);
+    </script>
   <!-- JS de esta vista -->
   <script src="{% static 'js/info-user-admin.js' %}"></script>
 </body>

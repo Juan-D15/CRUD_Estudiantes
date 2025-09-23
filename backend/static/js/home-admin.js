@@ -47,10 +47,17 @@ btnUser.addEventListener('click', (e)=>{
   e.stopPropagation();
   userMenu.classList.toggle('open');
 });
-uClose.addEventListener('click', ()=> userMenu.classList.remove('open'));
-document.addEventListener('click', (e)=>{
-  if(!userMenu.contains(e.target) && e.target !== btnUser){ userMenu.classList.remove('open'); }
+
+uClose.addEventListener('click', ()=>{
+  userMenu.classList.remove('open');
+  openConfirm({
+    title:'¿Quieres ver tu información',
+    confirmText:'Si',
+    cancelText:'No',
+    onConfirm:()=>{ window.location.href = window.ADMIN_INFO_URL || '../tramites/info.html'; }
+  });
 });
+
 uLogout.addEventListener('click', ()=>{
   userMenu.classList.remove('open');
   openConfirm({

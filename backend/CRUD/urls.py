@@ -43,6 +43,7 @@ urlpatterns = [
     path("admin/usuarios/eliminar/<int:id_usr>",   pages.admin_usr_eliminar,   name="admin_usr_eliminar"),
     path("admin/usuarios/editar", pages.admin_usr_editar, name="admin_usr_editar"),
     path("admin/usuarios/editar/<int:id_usr>", pages.admin_usr_editar, name="admin_usr_editar"),
+    path("api/usuarios/<int:id_usr>", api.api_usr_detalle, name="api_usr_detalle"),
     path("admin/usuarios/info", pages.admin_usr_info, name="admin_usr_info"),
     path("admin/usuarios/info/<int:id_usr>", pages.admin_usr_info, name="admin_usr_info"),
     #path("admin/usuarios/bloquear/<int:id_usr>",   pages.admin_usr_bloquear,   name="admin_usr_bloquear"),
@@ -50,6 +51,7 @@ urlpatterns = [
 
     # Reportes (admin)
     path("admin/reportes", pages.admin_rep_index, name="admin_rep_index"),
+    path("admin/reportes/reportes", pages.admin_rep_reportes, name="admin_rep_reportes"),
     #path("admin/reportes/ultima-conexion", pages.admin_rep_ultima_conexion, name="admin_rep_ultima_conexion"),
     #path("admin/reportes/tiempo-promedio", pages.admin_rep_tiempo_promedio, name="admin_rep_tiempo_promedio"),
     
@@ -71,7 +73,8 @@ urlpatterns = [
     path("api/estudiantes/<int:id_est>/delete",  api.api_eliminar,      name="api_eliminar"),        # DELETE (solo admin)
     #Usuarios (admin)
     path("api/usuarios",                          api.api_usr_listar,       name="api_usr_listar"),      # GET: listar
-    path("api/usuarios/crear",                    api.api_usr_crear,        name="api_usr_crear"),       # POST: crear
+    path("api/usuarios/<int:id_usr>", api.api_usr_detalle, name="api_usr_detalle"),
+    path("api/usuarios/create",                    api.api_usr_crear,        name="api_usr_crear"),       # POST: crear
     path("api/usuarios/<int:id_usr>/actualizar",  api.api_usr_actualizar,   name="api_usr_actualizar"),  # PUT: actualizar
     path("api/usuarios/<int:id_usr>/eliminar",    api.api_usr_eliminar,     name="api_usr_eliminar"),    # DELETE: eliminar
     path("api/usuarios/<int:id_usr>/bloquear",    api.api_usr_bloquear,     name="api_usr_bloquear"),    # POST: bloquear

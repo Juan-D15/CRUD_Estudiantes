@@ -248,7 +248,6 @@ def registrar_usuario(u, nc, co, rol, pwd, pwdc):
         rc, = cur.fetchone()
     return int(rc)
 
-
 def sp_usr_listar(solo_activos: bool|None=None, rol: str|None=None):
     sql = "EXEC dbo.sp_ListarUsuarios @soloActivos=%s, @rol=%s"
     with connection.cursor() as cur:
@@ -257,18 +256,28 @@ def sp_usr_listar(solo_activos: bool|None=None, rol: str|None=None):
         cols = [c[0] for c in cur.description]
     return [dict(zip(cols, r)) for r in rows]
 
-def sp_usr_actualizar(id_usuario: int, usuario: str, nombre: str, correo: str,
-                      rol: str, estado: str, id_admin_accion: int):
+
+def actualizar_usuario(id_usr: int, usuario: str, nombre: str, correo: str,
+                       rol: str, estado: str, id_admin_accion: int) -> int:
+    """
+    Llama a dbo.sp_ActualizarUsuario (ya creado en tu SQL).
+    Códigos: 0=OK, 2=usuario duplicado, 3=correo duplicado, 6=no existe, 5=error.
+    """
     sql = """
     DECLARE @rc INT;
     EXEC @rc = dbo.sp_ActualizarUsuario
-      @idUsuario=%s, @usuario=%s, @nombreCompleto=%s, @correo=%s,
-      @rol=%s, @estado=%s, @idAdminAccion=%s;
+        @idUsuario = %s,
+        @usuario = %s,
+        @nombreCompleto = %s,
+        @correo = %s,
+        @rol = %s,
+        @estado = %s,
+        @idAdminAccion = %s;
     SELECT @rc;
     """
     with connection.cursor() as cur:
-        cur.execute(sql, [id_usuario, usuario, nombre, correo, rol, estado, id_admin_accion])
-        rc, = cur.fetchone()
+        cur.execute(sql, [id_usr, usuario, nombre, correo, rol, estado, id_admin_accion])
+        rc = cur.fetchone()[0]
     return int(rc)
 
 def sp_usr_eliminar(id_usuario: int, id_admin_accion: int):
@@ -323,22 +332,18 @@ def desbloquear_usuario(id_admin: int, id_usuario: int) -> int:
         rc, = cur.fetchone()
     return int(rc)
 
+
 def get_usuario_info(id_usuario: int):
-    """
-    Devuelve {usuario, nombreCompleto, correo, rol, estado, fechaCreacion} del usuario.
-    """
     if not id_usuario:
         return None
     sql = """
     SELECT usuario, nombreCompleto, correo, rol, estado, fechaCreacion
-    FROM dbo.tbUsuario
-    WHERE idUsuario = %s
+    FROM dbo.tbUsuario WHERE idUsuario=%s
     """
     with connection.cursor() as cur:
         cur.execute(sql, [id_usuario])
         row = cur.fetchone()
-        if not row:
-            return None
+        if not row: return None
         cols = [c[0] for c in cur.description]
     return dict(zip(cols, row))
 

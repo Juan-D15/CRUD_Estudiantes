@@ -1,21 +1,17 @@
-// ======== Helpers ========
-const $ = (sel) => document.querySelector(sel);
+// ===== Helpers =====
+const $ = (s) => document.querySelector(s);
 
 function toggleRole() {
   const card = $('#card');
-  const rolField = $('#rol');
-  const isSec = card.classList.toggle('is-secretaria');
-  rolField.value = isSec ? 'secretaria' : 'admin';
+  card.classList.toggle('is-secretaria');
 }
 
-// Email simple: debe tener una @ no al inicio/fin y al menos un punto luego
 function isValidEmail(v) {
   if (!v) return false;
   if (v.startsWith('@') || v.endsWith('@')) return false;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
-// Reglas de contraseña
 function checkPasswordRules(pwd) {
   const missing = [];
   if (!/[A-Z]/.test(pwd)) missing.push('mayúscula');
@@ -33,23 +29,10 @@ function renderStrength(pwd) {
   const { missing, lenOK } = checkPasswordRules(pwd);
 
   if (!pwd) return;
-
-  if (!lenOK) {
-    s.textContent = 'Mínimo 8 caracteres.';
-    s.classList.add('bad');
-    return;
-  }
-
-  if (missing.length >= 2) {
-    s.textContent = `Contraseña Débil, asegúrate de incluir: ${missing.join(', ')}.`;
-    s.classList.add('bad');
-  } else if (missing.length === 1) {
-    s.textContent = `Contraseña Decente, asegúrate de incluir: ${missing[0]}.`;
-    s.classList.add('mid');
-  } else {
-    s.textContent = 'Contraseña Fuerte';
-    s.classList.add('good');
-  }
+  if (!lenOK) { s.textContent = 'Mínimo 8 caracteres.'; s.classList.add('bad'); return; }
+  if (missing.length >= 2) { s.textContent = `Contraseña Débil, incluye: ${missing.join(', ')}.`; s.classList.add('bad'); }
+  else if (missing.length === 1) { s.textContent = `Contraseña Decente, falta: ${missing[0]}.`; s.classList.add('mid'); }
+  else { s.textContent = 'Contraseña Fuerte'; s.classList.add('good'); }
 }
 
 function attachEye(btn, input) {
@@ -61,52 +44,75 @@ function attachEye(btn, input) {
   });
 }
 
-// ======== Events / Init ========
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]+)'));
+  return m ? decodeURIComponent(m[2]) : null;
+}
+const csrftoken = getCookie('csrftoken');
+
+// ===== Init UI =====
 $('#btnSwitch').addEventListener('click', toggleRole);
-
-// Strength & validations en vivo
 $('#pwd1').addEventListener('input', (e) => renderStrength(e.target.value));
-
-// Ojos
-document.querySelectorAll('.input-wrap').forEach(wrap => {
-  const eye = wrap.querySelector('.eye');
-  const inp = wrap.querySelector('input');
+document.querySelectorAll('.input-wrap').forEach(w => {
+  const eye = w.querySelector('.eye'); const inp = w.querySelector('input');
   if (eye && inp) attachEye(eye, inp);
 });
 
-$('#formUser').addEventListener('submit', (e) => {
-  e.preventDefault();
-  // Limpia errores
-  ['eUsuario','eNombre','eCorreo','ePwd1','ePwd2'].forEach(id => { const el = $('#'+id); if(el) el.textContent=''; });
+function setError(id, msg){ const el = $('#'+id); if (el) el.textContent = msg || ''; }
+function clearErrors(){ ['eUsuario','eNombre','eCorreo','ePwd1','ePwd2'].forEach(id => setError(id, '')); }
 
+// ===== Submit =====
+$('#formUser').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearErrors();
+
+  const isSec   = document.getElementById('card').classList.contains('is-secretaria');
+  const rol     = isSec ? 'secretaria' : 'admin';
   const usuario = $('#usuario').value.trim();
   const nombre  = $('#nombre').value.trim();
   const correo  = $('#correo').value.trim();
   const pwd1    = $('#pwd1').value.trim();
   const pwd2    = $('#pwd2').value.trim();
 
+  // Validaciones de UI
   let ok = true;
-
-  if (!usuario) { ok=false; $('#eUsuario').textContent = 'Requerido.'; }
-  if (!nombre)  { ok=false; $('#eNombre').textContent  = 'Requerido.'; }
-
-  if (!isValidEmail(correo)) {
-    ok = false;
-    $('#eCorreo').textContent = 'Correo inválido.';
-  }
-
+  if (!usuario) setError('eUsuario','Requerido.'), ok=false;
+  if (!nombre)  setError('eNombre','Requerido.'), ok=false;
+  if (!isValidEmail(correo)) setError('eCorreo','Correo inválido.'), ok=false;
   const { missing, lenOK } = checkPasswordRules(pwd1);
-  if (!lenOK) { ok=false; $('#ePwd1').textContent = 'Mínimo 8 caracteres.'; }
-  if (missing.length) {
-    ok=false;
-    // además del texto de abajo, marcamos error en el bloque rojo
-    if (!$('#sPwd1').textContent) renderStrength(pwd1);
-  }
-  if (pwd1 !== pwd2) { ok=false; $('#ePwd2').textContent = 'Las contraseñas no coinciden.'; }
-
+  if (!lenOK) setError('ePwd1','Mínimo 8 caracteres.'), ok=false;
+  if (missing.length) { if (!$('#sPwd1').textContent) renderStrength(pwd1); ok=false; }
+  if (pwd1 !== pwd2) setError('ePwd2','Las contraseñas no coinciden.'), ok=false;
   if (!ok) return;
 
-  // FRONT-ONLY (demo)
-  alert(`Usuario creado (demo)\nRol: ${$('#rol').value}`);
-  // Aquí luego llamarías a tu endpoint / guardar vía fetch.
+  const fd = new FormData();
+  fd.append('usuario', usuario);
+  fd.append('nombreCompleto', nombre);
+  fd.append('correo', correo);
+  fd.append('rol', rol);
+  fd.append('pwd', pwd1);
+  fd.append('pwdConfirm', pwd2);
+
+  try {
+    const resp = await fetch('/api/usuarios/create', {
+      method: 'POST',
+      body: fd,
+      headers: { 'X-CSRFToken': csrftoken }
+    });
+    const json = await resp.json().catch(() => ({}));
+
+    if (!resp.ok || json.ok === false) {
+      alert(json.msg || json.error || 'No se pudo registrar.');
+      return;
+    }
+
+    alert('Usuario registrado correctamente.');
+    $('#formUser').reset();
+    $('#sPwd1').textContent = ''; $('#sPwd1').className = 'strength';
+    // volver a ADMIN por defecto
+    const card = $('#card'); card.classList.remove('is-secretaria');
+  } catch (err) {
+    console.error(err);
+    alert('Error de red/servidor.');
+  }
 });

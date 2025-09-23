@@ -95,6 +95,10 @@
 
       <div class="modal-actions">
         <button id="btnCancelar" class="btn-outline btn-cancel" type="button">Cancelar</button>
+        <!-- Botón oculto que se muestra cuando rc=10 -->
+        <button id="btnBloquear" class="btn btn-warn hidden" type="button" title="Bloquear en lugar de eliminar">
+          Bloquear
+        </button>
         <button id="btnEliminar" class="btn-outline btn-danger" type="button">Eliminar</button>
       </div>
     </div>
@@ -102,7 +106,10 @@
 
   <!-- Toast -->
   <div id="toast" class="toast hidden">Mensaje</div>
-
-  <script src="{% static 'js/eliminar-usuario.js' %}"></script>
+<script>
+  // si llegas a /admin/usuarios/eliminar/7 abriré el modal de ese ID
+  window.INIT_ID = "{{ id_usr|default:'null' }}";
+</script>
+  <script src="{% static 'js/eliminar-usuario.js' %}?v=3"></script>
 </body>
 </html>

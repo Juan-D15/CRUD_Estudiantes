@@ -23,6 +23,13 @@ const btnConfirm= $('#btnConfirm');
 // Toast
 const toast = $('#toast');
 
+// ========= UTIL: CSRF =========
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+const CSRFTOKEN = () => getCookie('csrftoken');
+
 // ===== Estado: color del select =====
 function paintState(){
   fEstado.classList.remove('state-active','state-blocked');
@@ -30,11 +37,9 @@ function paintState(){
   else fEstado.classList.add('state-blocked');
 }
 fEstado.addEventListener('change', paintState);
-paintState();
 
-// Guarda snapshot inicial
+// ===== Snapshot inicial =====
 let baseline = getCurrentValues();
-
 function getCurrentValues(){
   return {
     id: fId.value.trim(),
@@ -45,12 +50,37 @@ function getCurrentValues(){
   };
 }
 
-// Valida correo muy simple
-function emailOk(v){
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-}
+// ===== Validación correo simple =====
+function emailOk(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
-// Construye diff y muestra modal
+// ===== Cargar datos reales del usuario =====
+async function loadProfile() {
+  try {
+    let id = window.CURRENT_USER_ID;   // puede ser 0
+    if (!Number.isFinite(id)) id = 0;  // permitir 0
+
+    const res = await fetch(`/api/usuarios/${id}`, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const u = await res.json();
+
+    fId.value      = u.idUsuario ?? id;
+    fNombre.value  = u.nombreCompleto ?? '';
+    fUsuario.value = u.usuario ?? '';
+    fCorreo.value  = u.correo ?? '';
+    fCreado.value  = (u.fechaCreacion || '').toString().replace('T',' ').slice(0,16);
+    fEstado.value  = (u.estado || 'activo').toLowerCase();
+    paintState();
+
+    baseline = getCurrentValues();
+  } catch (e) {
+    console.error('loadProfile:', e);
+    msg.textContent = 'No se pudo cargar la información.';
+    setTimeout(() => (msg.textContent = ''), 2500);
+  }
+}
+loadProfile();
+
+// ===== Diff y modal =====
 btnPreview.addEventListener('click', () => {
   // Validación mínima
   if(!emailOk(fCorreo.value.trim())){
@@ -64,11 +94,7 @@ btnPreview.addEventListener('click', () => {
 
   for(const key of Object.keys(current)){
     if(current[key] !== baseline[key]){
-      rows.push({
-        campo: keyMap(key),
-        before: baseline[key],
-        after: current[key]
-      });
+      rows.push({ campo: keyMap(key), before: baseline[key], after: current[key] });
     }
   }
 
@@ -110,7 +136,6 @@ function escapeHTML(s){
 function openModal(){
   overlay.classList.remove('hidden');
   modal.classList.remove('hidden');
-  // Animación de entrada
   requestAnimationFrame(() => modal.classList.add('show'));
   btnConfirm.focus();
 }
@@ -125,11 +150,51 @@ overlay.addEventListener('click', closeModal);
 btnCancel.addEventListener('click', closeModal);
 window.addEventListener('keydown', (ev)=> { if(ev.key === 'Escape') closeModal(); });
 
-// Confirmar (simulado)
-btnConfirm.addEventListener('click', () => {
-  baseline = getCurrentValues();     // “guardamos” como definitivo
+// ===== Confirmar: llama API =====
+btnConfirm.addEventListener('click', async () => {
   closeModal();
-  showToast('Actualizado correctamente.');
+
+  const id = window.CURRENT_USER_ID;
+  const body = {
+    nombreCompleto: fNombre.value.trim(),
+    usuario:        fUsuario.value.trim(),
+    correo:         fCorreo.value.trim(),
+    estado:         fEstado.value
+  };
+
+  try {
+    const res = await fetch(`/api/usuarios/${id}/actualizar`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': CSRFTOKEN()
+      },
+      body: JSON.stringify(body),
+      credentials: 'same-origin'
+    });
+    const j = await res.json().catch(() => ({}));
+
+    // Convención: rc=0 OK; el resto = error de validación/BD
+    if(res.ok && (j.rc === 0 || j.ok === true)){
+      baseline = getCurrentValues();
+      showToast('Actualizado correctamente.');
+    } else {
+      const msgMap = {
+        1: 'Dato requerido.',
+        2: 'Usuario duplicado.',
+        3: 'Correo duplicado.',
+        4: 'Contraseña débil.',
+        5: 'Error del servidor.',
+        6: 'No existe o no permitido.'
+      };
+      msg.textContent = j.msg || msgMap[j.rc] || 'No se pudo actualizar.';
+      setTimeout(() => msg.textContent = '', 2500);
+    }
+  } catch (e) {
+    console.error('update self:', e);
+    msg.textContent = 'Error de red/servidor.';
+    setTimeout(() => msg.textContent = '', 2500);
+  }
 });
 
 // Toast

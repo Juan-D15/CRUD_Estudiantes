@@ -59,26 +59,37 @@ def admin_usr_index(request):
     return render(request, "admin/usuarios/index.html")
 
 @require_role("admin")
+@ensure_csrf_cookie
 def admin_usr_listado(request):
     return render(request, "admin/usuarios/listado.html")
 
 @require_role("admin")
+@ensure_csrf_cookie
 def admin_usr_registrar(request):
     return render(request, "admin/usuarios/registrar.html")
 
 @require_role("admin")
+@ensure_csrf_cookie
 def admin_usr_editar(request, id_usr=None):
     return render(request, "admin/usuarios/editar.html", {"id_usr": id_usr})
 
 @require_role("admin")
+@ensure_csrf_cookie
 def admin_usr_eliminar(request, id_usr=None):
     return render(request, "admin/usuarios/eliminar.html", {"id_usr": id_usr})
 
 @require_role("admin")
+@ensure_csrf_cookie
 def admin_usr_info(request, id_usr=None):
+    if id_usr is None:
+        id_usr = request.session.get("id_usuario_db")  # id del usuario logueado
     return render(request, "admin/tramites/info.html", {"id_usr": id_usr})
 
 #Reportes
 @require_role("admin")
 def admin_rep_index(request):        # menú/landing del módulo estudiantes
     return render(request, "admin/tramites/index.html")
+
+@require_role("admin")
+def admin_rep_reportes(request):        
+    return render(request, "admin/tramites/reportes.html")

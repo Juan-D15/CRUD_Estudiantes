@@ -19,12 +19,13 @@ from .db import (
     sp_est_actualizar,
     sp_est_eliminar,
     sp_usr_listar,
-    sp_usr_actualizar,
+    actualizar_usuario,
     sp_usr_eliminar,
     registrar_usuario,
     bloquear_usuario,
     desbloquear_usuario,
     rep_accesos, rep_transacciones, vw_ultima_conexion, vw_tiempo_promedio, rep_datos_personales,
+    get_usuario_info,
     login_usuario,
     solicitar_codigo_reset,  # crea registro y guarda hash del código
     verificar_codigo_reset,  # valida email+codigo -> retorna token
@@ -39,8 +40,9 @@ from .db import (
 # Helpers
 # ---------------------------
 def _json_body(request):
+    import json
     try:
-        return json.loads(request.body or "{}")
+        return json.loads(request.body.decode("utf-8") or "{}")
     except Exception:
         return {}
 
@@ -118,9 +120,11 @@ def api_actualizar(request, id_est: int):
 def api_eliminar(request, id_est: int):
     rc = sp_est_eliminar(id_est, request.session.get("id_usuario_db"))
     return JsonResponse({"rc": rc})  # 200
+
 #-------------------------
 # APIs Usuarios
 #-------------------------
+
 @require_role("admin")
 @require_http_methods(["POST"])
 def api_usr_crear(request):
@@ -153,40 +157,126 @@ def api_usr_crear(request):
 @require_role("admin")
 @require_http_methods(["GET"])
 def api_usr_listar(request):
-    solo = request.GET.get("soloActivos")
-    rol  = request.GET.get("rol")
-    solo_activos = None if solo is None else (solo.lower() in ("1","true","t","yes","y"))
-    data = sp_usr_listar(solo_activos, rol)
+    """
+    GET /api/usuarios
+    Query:
+      rol=admin|secretaria                (uno)            -> filtrado en SQL
+      soloActivos=1|0                     (uno)            -> filtrado en SQL
+      roles=admin,secretaria              (múltiples)      -> filtrado en Python
+      estados=activo,bloqueado            (múltiples)      -> filtrado en Python
+      orden=asc|desc                      (fechaCreacion)
+    """
+    # Compatibilidad hacia atrás (tu SP acepta 1 rol y activo/bloqueado)
+    one_rol  = request.GET.get("rol")
+    solo     = request.GET.get("soloActivos")
+    solo_act = None if solo is None else (solo.lower() in ("1","true","t","yes","y"))
+
+    # Pedimos a SQL lo más filtrado posible
+    data = sp_usr_listar(solo_act, one_rol)   # <- SELECT con ORDER BY DESC por defecto
+    # data: [{ idUsuario, usuario, nombreCompleto, correo, rol, estado, ultimoCambioPwd, intentosFallidos, must_reset, fechaCreacion }]
+
+    # Filtros múltiples en Python (opcional)
+    roles_q   = [r.strip().lower() for r in (request.GET.get("roles") or "").split(",") if r.strip()]
+    estados_q = [e.strip().lower() for e in (request.GET.get("estados") or "").split(",") if e.strip()]
+    if roles_q:
+        data = [d for d in data if (d.get("rol") or "").lower() in roles_q]
+    if estados_q:
+        data = [d for d in data if (d.get("estado") or "").lower() in estados_q]
+
+    # Orden explícito si lo piden
+    orden = (request.GET.get("orden") or "desc").lower()
+    if orden in ("asc", "desc"):
+        data.sort(key=lambda x: (x.get("fechaCreacion") or ""), reverse=(orden=="desc"))
+
     return JsonResponse({"ok": True, "data": data})
 
 @require_role("admin")
+@require_http_methods(["GET"])
+def api_usr_detalle(request, id_usr: int):
+    """
+    GET /api/usuarios/<id>
+    Devuelve { rc:0, user:{...} } si existe; { rc:6 } con 404 si no.
+    """
+    if not id_usr:
+        id_usr = request.session.get("id_usuario_db")
+
+    info = get_usuario_info(id_usr)
+    if not info:
+        return JsonResponse({"rc": 6, "msg": "no encontrado"}, status=404)
+
+    data = {
+        "idUsuario": id_usr,
+        "usuario": info["usuario"],
+        "nombreCompleto": info["nombreCompleto"],
+        "correo": info["correo"],
+        "rol": info["rol"],
+        "estado": info["estado"],
+        "fechaCreacion": info["fechaCreacion"],
+    }
+    return JsonResponse({"rc": 0, "user": data})
+
+@require_role("admin")
 @require_http_methods(["PUT"])
-def api_usr_actualizar(request, id_usr):
-    d = _json_body(request)
-    id_admin = request.session.get("id_usuario_db")
-    rc = sp_usr_actualizar(
-        id_usr,
-        (d.get("usuario") or "").strip(),
-        (d.get("nombreCompleto") or "").strip(),
-        (d.get("correo") or "").strip().lower(),
-        (d.get("rol") or "").strip().lower(),
-        (d.get("estado") or "").strip().lower(),
-        id_admin
-    )
-    if rc != 0:
-        msg = {1:"Dato requerido",2:"Usuario duplicado",3:"Correo duplicado",5:"Error",6:"No existe"}.get(rc,"Error")
-        return JsonResponse({"ok": False, "rc": rc, "msg": msg}, status=400)
-    return JsonResponse({"ok": True})
+def api_usr_actualizar(request, id_usr: int):
+    """
+    PUT /api/usuarios/<id>/actualizar
+    Body JSON: { usuario, nombreCompleto, correo, rol?, estado? }
+    Respuesta: { rc, msg }
+    """
+    if not id_usr:
+        id_usr = request.session.get("id_usuario_db")
+
+    try:
+        body = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        return JsonResponse({"rc": -1, "msg": "JSON inválido"})
+
+    nombre  = (body.get("nombreCompleto") or "").strip()
+    usuario = (body.get("usuario") or "").strip()
+    correo  = (body.get("correo") or "").strip().lower()
+    estado  = (body.get("estado") or "activo").strip().lower()
+
+    info = get_usuario_info(id_usr)
+    if not info:
+        return JsonResponse({"rc": 6, "msg": "Usuario no existe."})
+
+    rol = (body.get("rol") or info.get("rol") or "admin").strip().lower()
+    if estado not in ("activo", "bloqueado"): estado = "activo"
+    if rol not in ("admin", "secretaria"):    rol = info.get("rol")
+
+    id_admin_accion = request.session.get("id_usuario_db")
+    rc = actualizar_usuario(id_usr, usuario, nombre, correo, rol, estado, id_admin_accion)
+
+    msg_map = {
+        0: "Actualizado correctamente.",
+        1: "Falta un dato requerido o valor inválido.",
+        2: "El nombre de usuario ya existe.",
+        3: "El correo ya existe.",
+        5: "Error del servidor.",
+        6: "No existe o no autorizado.",
+    }
+    return JsonResponse({"rc": rc, "msg": msg_map.get(rc, "No se pudo actualizar.")})
+
 
 @require_role("admin")
 @require_http_methods(["DELETE"])
-def api_usr_eliminar(request, id_usr):
+def api_usr_eliminar(request, id_usr: int):
+    """
+    DELETE /api/usuarios/<id>/eliminar
+    Códigos SP esperados:
+      0 OK, 6 no existe, 10 tiene referencias (no se puede borrar), 5 error general
+    """
     id_admin = request.session.get("id_usuario_db")
     rc = sp_usr_eliminar(id_usr, id_admin)
-    if rc != 0:
-        msg = {6:"No existe",10:"Tiene referencias; bloquéalo en lugar de eliminar.",5:"Error"}.get(rc,"Error")
-        return JsonResponse({"ok": False, "rc": rc, "msg": msg}, status=400)
-    return JsonResponse({"ok": True})
+
+    msg_map = {
+        0:  "Eliminado correctamente.",
+        6:  "No existe.",
+        10: "No se puede eliminar: tiene referencias (bloquéalo en su lugar).",
+        5:  "Error del servidor.",
+    }
+    ok = (rc == 0)
+    return JsonResponse({"ok": ok, "rc": rc, "msg": msg_map.get(rc, "Error")}, status=(200 if ok else 400))
 
 @require_role("admin")
 @require_http_methods(["POST"])

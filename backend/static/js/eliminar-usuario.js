@@ -1,32 +1,27 @@
-// ====== DEMO DATA (reemplaza con fetch a tu API cuando conectes backend) ======
-let usuarios = [
-  {id:1, usuario:'admin',     correo:'admin@dominio.com',     rol:'admin',      fecha:'2025-06-01 10:15'},
-  {id:2, usuario:'ana.alv',   correo:'ana.alvarez@correo.com', rol:'secretaria', fecha:'2025-06-02 11:25'},
-  {id:3, usuario:'pedro.lpz', correo:'pedro.lopez@correo.com', rol:'secretaria', fecha:'2025-06-03 09:40'},
-  {id:4, usuario:'lucia.gmz', correo:'lucia.gomez@correo.com', rol:'secretaria', fecha:'2025-06-05 14:20'},
-];
+// ===== Helpers =====
+const $ = (s) => document.querySelector(s);
 
-// ====== DOM refs ======
-const tbody   = document.getElementById('tbodyUsuarios');
-const msg     = document.getElementById('msg');
-const overlay = document.getElementById('overlay');
-const modal   = document.getElementById('modal');
-const toast   = document.getElementById('toast');
+const tbody   = $('#tbodyUsuarios');
+const msg     = $('#msg');
+const overlay = $('#overlay');
+const modal   = $('#modal');
+const toast   = $('#toast');
 
-const mId     = document.getElementById('m-id');
-const mUsr    = document.getElementById('m-usuario');
-const mEmail  = document.getElementById('m-correo');
-const mRol    = document.getElementById('m-rol');
-const mFecha  = document.getElementById('m-fecha');
+const mId     = $('#m-id');
+const mUsr    = $('#m-usuario');
+const mEmail  = $('#m-correo');
+const mRol    = $('#m-rol');
+const mFecha  = $('#m-fecha');
 
-const btnCancelar = document.getElementById('btnCancelar');
-const btnEliminar = document.getElementById('btnEliminar');
+const btnCancelar = $('#btnCancelar');
+const btnEliminar = $('#btnEliminar');
+const btnBloquear = $('#btnBloquear'); // <— NUEVO botón para fallback
 
 let toDeleteId = null;
+let usuarios = [];  // listado
 
-// ====== Helpers ======
-function show(el){ el.classList.remove('hidden') }
-function hide(el){ el.classList.add('hidden') }
+function show(el){ el.classList.remove('hidden'); }
+function hide(el){ el.classList.add('hidden'); }
 
 function showToast(text){
   toast.textContent = text;
@@ -34,18 +29,109 @@ function showToast(text){
   setTimeout(()=> hide(toast), 2200);
 }
 
-function openModal(user){
-  toDeleteId = user.id;
-  mId.textContent    = user.id;
-  mUsr.textContent   = user.usuario;
-  mEmail.textContent = user.correo;
-  mRol.textContent   = user.rol;
-  mFecha.textContent = user.fecha;
-  show(overlay); show(modal);
+function getCookie(name) {
+  const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return m ? m.pop() : '';
 }
-function closeModal(){ hide(overlay); hide(modal); toDeleteId = null; }
+function csrfHeader(){
+  return { 'X-CSRFToken': getCookie('csrftoken') };
+}
 
-// ====== Render tabla ======
+// ===== Normalizadores =====
+function normalizeRow(r) {
+  return {
+    id: r.idUsuario ?? r.id ?? r.id_usuario,
+    usuario: r.usuario ?? '',
+    correo: r.correo ?? '',
+    rol: r.rol ?? '',
+    estado: r.estado ?? 'activo',
+    fecha: r.fechaCreacion ?? r.fecha_registro ?? ''
+  };
+}
+function normalizeUserDetail(j){
+  // acepta {rc:0,user:{...}} o el objeto pelado
+  const d = (j && (j.user || j)) || {};
+  return {
+    id: d.idUsuario ?? d.id ?? 0,
+    usuario: d.usuario ?? '',
+    nombreCompleto: d.nombreCompleto ?? d.nombre ?? '',
+    correo: d.correo ?? '',
+    rol: d.rol ?? 'secretaria',
+    estado: d.estado ?? 'activo',
+    fecha: d.fechaCreacion ?? ''
+  };
+}
+
+// ===== API =====
+async function apiListarUsuarios(){
+  const r = await fetch('/api/usuarios', {
+    headers: { 'Accept': 'application/json' },
+    credentials: 'same-origin',
+    cache: 'no-store'
+  });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const j = await r.json();
+  const arr = (j && j.data) ? j.data : [];
+  return arr.map(normalizeRow);
+}
+
+async function apiEliminarUsuario(id){
+  const r = await fetch(`/api/usuarios/${id}/eliminar`, {
+    method: 'DELETE',
+    headers: { ...csrfHeader(), 'Accept': 'application/json' },
+    credentials: 'same-origin',
+    cache: 'no-store'
+  });
+  const j = await r.json().catch(()=> ({}));
+  // ok:true cuando rc==0; si rc==10, mostramos el botón Bloquear
+  if(!r.ok || (j && j.ok === false)) {
+    const rc  = (j && typeof j.rc === 'number') ? j.rc : -1;
+    const msg = (j && j.msg) || `No se pudo eliminar (HTTP ${r.status})`;
+    const error = new Error(msg);
+    error.rc = rc;
+    throw error;
+  }
+  return j; // { ok:true, rc:0, msg:'...' }
+}
+
+// detalle para poder bloquear (necesitamos nombre/usuario/correo/rol)
+async function apiGetUsuario(id){
+  const r = await fetch(`/api/usuarios/${id}`, {
+    headers: { 'Accept': 'application/json' },
+    credentials: 'same-origin',
+    cache: 'no-store'
+  });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const j = await r.json();
+  return normalizeUserDetail(j);
+}
+
+async function apiActualizarUsuario(id, payload){
+  const r = await fetch(`/api/usuarios/${id}/actualizar`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...csrfHeader() },
+    body: JSON.stringify(payload),
+    credentials: 'same-origin',
+    cache: 'no-store'
+  });
+  const j = await r.json().catch(()=> ({rc:5}));
+  return j; // { rc, msg }
+}
+
+// bloqueo “soft delete” cuando rc=10
+async function apiBloquearUsuario(id){
+  const u = await apiGetUsuario(id);
+  const body = {
+    usuario: u.usuario,
+    nombreCompleto: u.nombreCompleto,
+    correo: u.correo,
+    rol: u.rol,
+    estado: 'bloqueado',
+  };
+  return apiActualizarUsuario(id, body);
+}
+
+// ===== Render =====
 function render(){
   tbody.innerHTML = '';
   if(!usuarios.length){
@@ -56,6 +142,7 @@ function render(){
 
   usuarios.forEach(u=>{
     const tr = document.createElement('tr');
+    if (u.estado === 'bloqueado') tr.classList.add('blocked'); // opcional (estilo gris)
 
     const tdId    = document.createElement('td'); tdId.textContent = u.id;
     const tdUsr   = document.createElement('td'); tdUsr.textContent = u.usuario;
@@ -81,20 +168,79 @@ function render(){
   });
 }
 
-// ====== Eventos modal ======
+function openModal(user){
+  toDeleteId = user.id;
+  mId.textContent    = user.id;
+  mUsr.textContent   = user.usuario;
+  mEmail.textContent = user.correo;
+  mRol.textContent   = user.rol;
+  mFecha.textContent = user.fecha;
+  hide(btnBloquear);            // se muestra solo si rc=10
+  show(overlay); show(modal);
+}
+function closeModal(){ hide(overlay); hide(modal); toDeleteId = null; hide(btnBloquear); }
+
+// ===== Eventos modal =====
 btnCancelar.addEventListener('click', closeModal);
 overlay.addEventListener('click', closeModal);
-document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeModal() });
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeModal(); });
 
-btnEliminar.addEventListener('click', ()=>{
+btnEliminar.addEventListener('click', async ()=>{
   if(toDeleteId == null) return;
-
-  // Eliminar del arreglo (demo). En producción, haz fetch al backend.
-  usuarios = usuarios.filter(u => u.id !== toDeleteId);
-  render();
-  closeModal();
-  showToast('Usuario eliminado correctamente.');
+  btnEliminar.disabled = true;
+  try{
+    await apiEliminarUsuario(toDeleteId);
+    usuarios = usuarios.filter(u => u.id !== toDeleteId);
+    render();
+    closeModal();
+    showToast('Usuario eliminado correctamente.');
+  }catch(err){
+    // Si es rc=10 => mostrar botón Bloquear
+    if (err && err.rc === 10) {
+      show(btnBloquear);
+      showToast('No se puede eliminar: tiene referencias. Puedes bloquearlo.',);
+    } else {
+      showToast(err.message || 'No se pudo eliminar.');
+    }
+  }finally{
+    btnEliminar.disabled = false;
+  }
 });
 
-// ====== Init ======
-render();
+btnBloquear.addEventListener('click', async ()=>{
+  if(toDeleteId == null) return;
+  btnBloquear.disabled = true;
+  try{
+    const res = await apiBloquearUsuario(toDeleteId);
+    if (res.rc === 0) {
+      usuarios = usuarios.map(u => u.id === toDeleteId ? {...u, estado:'bloqueado'} : u);
+      render();
+      closeModal();
+      showToast('Usuario bloqueado.');
+    } else {
+      showToast(res.msg || 'No se pudo bloquear.');
+    }
+  }catch(err){
+    showToast(err.message || 'No se pudo bloquear.');
+  }finally{
+    btnBloquear.disabled = false;
+  }
+});
+
+// ===== Init =====
+async function init(){
+  try{
+    usuarios = await apiListarUsuarios();
+    render();
+
+    // INIT_ID opcional para abrir modal directo
+    const initId = (window.INIT_ID ?? null);
+    if(typeof initId === 'number' && initId > 0){
+      const u = usuarios.find(x => x.id === initId);
+      if(u) openModal(u);
+    }
+  }catch(err){
+    msg.textContent = 'No se pudo cargar el listado.';
+  }
+}
+document.addEventListener('DOMContentLoaded', init);

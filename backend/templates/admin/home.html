@@ -48,7 +48,7 @@
         </div>
       <div class="u-actions">
         <button class="btn-outline warn" id="uChange">Cambiar contraseña</button>
-        <button class="btn-outline" id="uClose">Volver</button>
+        <button class="btn-outline" id="uClose">Info</button>
         <button class="btn-outline danger" id="uLogout">Cerrar sesión</button>
       </div>
     </div>
@@ -145,6 +145,7 @@
     // rutas para confirmaciones
     window.ADMIN_LOGIN_URL = "{% url 'admin_login' %}";
     window.ADMIN_RESET_URL = "{% url 'admin_reset_page' %}";
+    window.ADMIN_INFO_URL = "{% url 'admin_usr_info' %}";
   </script>
   <script src="{% static 'js/home-admin.js' %}"></script>
 </body>

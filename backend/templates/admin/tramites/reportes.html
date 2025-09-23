@@ -1,16 +1,17 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Gestión de Transacciones y Reportes</title>
-  <link rel="stylesheet" href="C:\Users\gandh\OneDrive\Escritorio\CUNOR\8VO SEMESTRE\base de datos 2\proyecto control de estudiantes\templates\static\css\gestion-transacciones.css">
+  <link rel="stylesheet" href="{% static 'css/gestion-transacciones.css' %}">
 </head>
 <body>
   <div class="frame">
 
     <!-- Volver -->
-    <a class="back" href="index-admin-tramites.html" aria-label="Volver">
+    <a class="back" href="{% url 'admin_rep_index' %}" aria-label="Volver">
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
         <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -142,6 +143,6 @@
     </div>
   </div>
 
-  <script src="C:\Users\gandh\OneDrive\Escritorio\CUNOR\8VO SEMESTRE\base de datos 2\proyecto control de estudiantes\templates\static\js\gestion-transacciones.js"></script>
+  <script src="{% static 'js/gestion-transacciones.js' %}"></script>
 </body>
 </html>

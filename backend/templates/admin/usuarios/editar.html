@@ -144,8 +144,10 @@
 
   <!-- Toast -->
   <div id="toast" class="toast" hidden>Mensaje</div>
-
+  <script>
+    window.INIT_ID = "{{ id_usr|default:'null' }";
+  </script>
   <!-- JS específico -->
-  <script src="{% static 'js/editar-usuario.js' %}"></script>
+  <script src="{% static 'js/editar-usuario.js' %}?v=2"></script>
 </body>
 </html>
