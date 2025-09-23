@@ -103,12 +103,12 @@ body {
 }
 /* Back button */
 .back{
-  display:inline-flex; align-items:center; gap:8px;
-  color:rgba(255,255,255,.85); text-decoration:none;
+  position: fixed; top:14px; left:18px; display:inline-flex; gap:8px; align-items:center;
+  color:rgba(212, 211, 211, 0.9); text-decoration:none; z-index:5;
   font-size:14px;
   transition:opacity .15s ease, transform .15s ease;
 }
-.back:hover{ opacity:.9; transform:translateX(-2px); }
+.back:hover{ opacity:.95; transform:translateX(-2px); }
 
 /* mensajes */
 .msg{ margin-top:12px; text-align:center; font-size:14px; color:rgba(255,255,255,.9); }

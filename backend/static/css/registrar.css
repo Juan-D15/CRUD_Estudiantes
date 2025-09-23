@@ -109,3 +109,10 @@ body {
 @media (prefers-reduced-motion: reduce){
   .btn-primary, .field input{ transition:none; }
 }
+
+.back{
+  position: fixed; top:14px; left:18px; display:inline-flex; gap:8px; align-items:center;
+  color:rgba(255,255,255,.9); text-decoration:none; z-index:5;
+  font-size:14px;
+  transition:opacity .15s ease, transform .15s ease;
+}

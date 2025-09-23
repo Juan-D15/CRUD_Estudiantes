@@ -53,17 +53,24 @@ function getCurrentValues(){
 // ===== Validación correo simple =====
 function emailOk(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
-// ===== Cargar datos reales del usuario =====
+// ===== Cargar datos reales del usuario logueado =====
 async function loadProfile() {
   try {
-    let id = window.CURRENT_USER_ID;   // puede ser 0
-    if (!Number.isFinite(id)) id = 0;  // permitir 0
+    // 0 = “usa el ID de la sesión” (soportado por el backend)
+    let id = window.CURRENT_USER_ID;
+    if (!Number.isFinite(id)) id = 0;
 
-    const res = await fetch(`/api/usuarios/${id}`, { credentials: 'same-origin' });
+    const res = await fetch(`/api/usuarios/${id}`, {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' }
+    });
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const u = await res.json();
 
-    fId.value      = u.idUsuario ?? id;
+    const raw = await res.json();
+    const u = (raw && typeof raw.rc === 'number' && raw.user) ? raw.user : raw;
+
+    fId.value      = String(u.idUsuario ?? id);
     fNombre.value  = u.nombreCompleto ?? '';
     fUsuario.value = u.usuario ?? '';
     fCorreo.value  = u.correo ?? '';
@@ -82,7 +89,6 @@ loadProfile();
 
 // ===== Diff y modal =====
 btnPreview.addEventListener('click', () => {
-  // Validación mínima
   if(!emailOk(fCorreo.value.trim())){
     msg.textContent = 'Correo inválido.';
     setTimeout(() => msg.textContent = '', 1500);
@@ -103,7 +109,6 @@ btnPreview.addEventListener('click', () => {
     return;
   }
 
-  // Render diff
   diffBody.innerHTML = '';
   rows.forEach(r => {
     const tr = document.createElement('tr');
@@ -150,11 +155,11 @@ overlay.addEventListener('click', closeModal);
 btnCancel.addEventListener('click', closeModal);
 window.addEventListener('keydown', (ev)=> { if(ev.key === 'Escape') closeModal(); });
 
-// ===== Confirmar: llama API =====
+// ===== Confirmar: llama API (actualizar mi perfil) =====
 btnConfirm.addEventListener('click', async () => {
   closeModal();
 
-  const id = window.CURRENT_USER_ID;
+  const id = Number.isFinite(window.CURRENT_USER_ID) ? window.CURRENT_USER_ID : 0;
   const body = {
     nombreCompleto: fNombre.value.trim(),
     usuario:        fUsuario.value.trim(),
@@ -170,11 +175,11 @@ btnConfirm.addEventListener('click', async () => {
         'X-CSRFToken': CSRFTOKEN()
       },
       body: JSON.stringify(body),
-      credentials: 'same-origin'
+      credentials: 'same-origin',
+      cache: 'no-store'
     });
     const j = await res.json().catch(() => ({}));
 
-    // Convención: rc=0 OK; el resto = error de validación/BD
     if(res.ok && (j.rc === 0 || j.ok === true)){
       baseline = getCurrentValues();
       showToast('Actualizado correctamente.');
