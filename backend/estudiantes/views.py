@@ -219,43 +219,68 @@ def api_usr_detalle(request, id_usr: int):
 @require_http_methods(["PUT"])
 def api_usr_actualizar(request, id_usr: int):
     """
-    PUT /api/usuarios/<id>/actualizar
-    Body JSON: { usuario, nombreCompleto, correo, rol?, estado? }
-    Respuesta: { rc, msg }
+    Actualiza datos del usuario. Si detecta cambio de estado,
+    aplica bloqueo/desbloqueo usando los SPs correspondientes.
     """
-    if not id_usr:
-        id_usr = request.session.get("id_usuario_db")
-
+    import json
     try:
         body = json.loads(request.body.decode("utf-8") or "{}")
     except Exception:
         return JsonResponse({"rc": -1, "msg": "JSON inválido"})
 
-    nombre  = (body.get("nombreCompleto") or "").strip()
-    usuario = (body.get("usuario") or "").strip()
-    correo  = (body.get("correo") or "").strip().lower()
-    estado  = (body.get("estado") or "activo").strip().lower()
+    nuevo_usuario = (body.get("usuario") or "").strip()
+    nuevo_nombre  = (body.get("nombreCompleto") or "").strip()
+    nuevo_correo  = (body.get("correo") or "").strip().lower()
+    nuevo_estado  = (body.get("estado") or "").strip().lower()
 
+    # Toma el rol actual si el front no lo envía
     info = get_usuario_info(id_usr)
     if not info:
         return JsonResponse({"rc": 6, "msg": "Usuario no existe."})
+    rol_actual   = (info.get("rol") or "admin").strip().lower()
+    estado_actual = (info.get("estado") or "activo").strip().lower()
 
-    rol = (body.get("rol") or info.get("rol") or "admin").strip().lower()
-    if estado not in ("activo", "bloqueado"): estado = "activo"
-    if rol not in ("admin", "secretaria"):    rol = info.get("rol")
+    nuevo_rol = (body.get("rol") or rol_actual).strip().lower()
+    if nuevo_rol not in ("admin", "secretaria"):
+        nuevo_rol = rol_actual
+    if nuevo_estado not in ("activo", "bloqueado"):
+        nuevo_estado = estado_actual
 
-    id_admin_accion = request.session.get("id_usuario_db")
-    rc = actualizar_usuario(id_usr, usuario, nombre, correo, rol, estado, id_admin_accion)
+    id_admin = request.session.get("id_usuario_db")
 
-    msg_map = {
-        0: "Actualizado correctamente.",
-        1: "Falta un dato requerido o valor inválido.",
-        2: "El nombre de usuario ya existe.",
-        3: "El correo ya existe.",
-        5: "Error del servidor.",
-        6: "No existe o no autorizado.",
-    }
-    return JsonResponse({"rc": rc, "msg": msg_map.get(rc, "No se pudo actualizar.")})
+    # 1) Actualiza datos de perfil SIN tocar el estado (lo tratamos en el paso 2)
+    rc = actualizar_usuario(
+        id_usr,
+        nuevo_usuario,
+        nuevo_nombre,
+        nuevo_correo,
+        nuevo_rol,
+        estado_actual,     # <- no cambiamos estado aquí
+        id_admin
+    )
+    if rc != 0:
+        msg_map = {
+            0: "Actualizado correctamente.",
+            1: "Falta un dato requerido o valor inválido.",
+            2: "El nombre de usuario ya existe.",
+            3: "El correo ya existe.",
+            5: "Error del servidor.",
+            6: "No existe o no autorizado.",
+        }
+        return JsonResponse({"rc": rc, "msg": msg_map.get(rc, "No se pudo actualizar.")})
+
+    # 2) Si cambió el estado, ejecuta el SP específico
+    if nuevo_estado != estado_actual:
+        if nuevo_estado == "bloqueado":
+            rc2 = bloquear_usuario(id_admin, id_usr)
+            if rc2 != 0:
+                return JsonResponse({"rc": rc2, "msg": "No se pudo bloquear."})
+        elif nuevo_estado == "activo":
+            rc2 = desbloquear_usuario(id_admin, id_usr)
+            if rc2 != 0:
+                return JsonResponse({"rc": rc2, "msg": "No se pudo desbloquear."})
+
+    return JsonResponse({"rc": 0, "msg": "Actualizado correctamente."})
 
 
 @require_role("admin")
