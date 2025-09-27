@@ -33,6 +33,7 @@
       </svg>
     </button>
 
+    <!-- Menú de usuario -->
     <div class="user-menu" id="userMenu" role="dialog" aria-label="Información de cuenta">
         <div class="u-row"><span class="k">Usuario</span>
           <span class="v" id="uUsuario">{{ userinfo.usuario|default:request.session.usuario }}</span>
@@ -41,7 +42,7 @@
           <span class="v" id="uCorreo">{{ userinfo.correo|default:"" }}</span>
         </div>
         <div class="u-row"><span class="k">Rol</span>
-          <span class="v" id="uCorreo">{{ userinfo.rol|default:"" }}</span>
+          <span class="v" id="uRol">{{ userinfo.rol|default:"" }}</span>
         </div>
         <div class="u-row"><span class="k">Registro</span>
           <span class="v" id="uFecha">{{ userinfo.fechaCreacion|date:"Y-m-d" }}</span>
@@ -147,6 +148,6 @@
     window.ADMIN_RESET_URL = "{% url 'admin_reset_page' %}";
     window.ADMIN_INFO_URL = "{% url 'admin_usr_info' %}";
   </script>
-  <script src="{% static 'js/home-admin.js' %}"></script>
+  <script src="{% static 'js/home-admin.js' %}?v=2"></script>
 </body>
 </html>

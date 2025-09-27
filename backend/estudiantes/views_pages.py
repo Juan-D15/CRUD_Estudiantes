@@ -1,26 +1,100 @@
 from django.shortcuts import render
 from utils.guards import require_role 
-from .db import get_usuario_info 
+from .db import get_usuario_info, solicitar_codigo_reset, verificar_codigo_reset
 from django.views.decorators.csrf import ensure_csrf_cookie
-
+import secrets
 
 def login_select(r):
     return render(r, "login_select.html")
 
+@ensure_csrf_cookie
 def admin_reset_page(r):
-    return render(r, "admin_reset.html", {
-        "email": r.GET.get("e",""),
-        "token": r.GET.get("t",""),
-    })
+    # Si ya viene por ?t=..., úsalo; si no, lo generamos para el admin logueado
+    email = (r.GET.get("e") or "").strip().lower()
+    token = (r.GET.get("t") or "").strip()
 
+    if not token:
+        uid = r.session.get("id_usuario_db")
+        if uid:
+            info = get_usuario_info(uid)
+            if info:
+                email = email or (info.get("correo") or "")
+                rol = "admin"
+                code = f"{secrets.randbelow(900000)+100000:06d}"
+                try:
+                    solicitar_codigo_reset(email, code, r.META.get("REMOTE_ADDR"), rol)
+                    ok, tk = verificar_codigo_reset(email, code, rol)
+                    if ok:
+                        token = tk
+                except Exception:
+                    pass  # si algo falla, la página se renderiza sin token y el JS mostrará el error
+
+    return render(r, "admin_reset.html", {"email": email, "token": token})
+
+@ensure_csrf_cookie
 def secretario_reset_page(r):
-    return render(r, "secretario_reset.html", {
-        "email": r.GET.get("e",""),
-        "token": r.GET.get("t",""),
-    })
-    
-# ===================== ADMIN =====================
+    email = (r.GET.get("e") or "").strip().lower()
+    token = (r.GET.get("t") or "").strip()
 
+    if not token:
+        uid = r.session.get("id_usuario_db")
+        if uid:
+            info = get_usuario_info(uid)
+            if info:
+                email = email or (info.get("correo") or "")
+                rol = "secretaria"
+                code = f"{secrets.randbelow(900000)+100000:06d}"
+                try:
+                    solicitar_codigo_reset(email, code, r.META.get("REMOTE_ADDR"), rol)
+                    ok, tk = verificar_codigo_reset(email, code, rol)
+                    if ok:
+                        token = tk
+                except Exception:
+                    pass
+
+    return render(r, "secretario_reset.html", {"email": email, "token": token})
+    
+# ===================== Secretaria =====================
+@require_role("secretaria")
+def secre_home_page(request):
+    idu = request.session.get("id_usuario_db")
+    info = get_usuario_info(idu)
+    return render(request, "secretaria/home.html", {"userinfo": info or {}})
+
+# ---- Estudiantes (secretaria) ----
+@require_role("secretaria")
+def secre_est_index(request):        # menú/landing del módulo estudiantes
+    return render(request, "secretaria/estudiantes/index.html")
+
+@require_role("secretaria")
+@ensure_csrf_cookie
+def secre_est_listado(request):
+    return render(request, "secretaria/estudiantes/listado.html")
+
+@require_role("secretaria")
+@ensure_csrf_cookie
+def secre_est_registrar(request):
+    return render(request, "secretaria/estudiantes/registrar.html")
+
+@require_role("secretaria") 
+@ensure_csrf_cookie
+def secre_est_actualizar(request, id_est=None):
+    return render(request, "secretaria/estudiantes/actualizar.html", {"id_est": id_est})
+
+# ---- Gestión-Usuario (secretaria) ----
+@require_role("secretaria")
+def secre_usr_index(request):
+    return render(request, "secretaria/gestion-usuario/index.html")
+
+@require_role("secretaria")
+@ensure_csrf_cookie
+def secre_usr_info(request, id_usr=None):
+    if id_usr is None:
+        id_usr = request.session.get("id_usuario_db")  # id del usuario logueado
+    return render(request, "secretaria/gestion-usuario/info.html", {"id_usr": id_usr})
+
+
+# ===================== ADMIN =====================
 @require_role("admin")
 def admin_home_page(request):
     idu = request.session.get("id_usuario_db")
@@ -32,20 +106,19 @@ def admin_home_page(request):
 def admin_est_index(request):        # menú/landing del módulo estudiantes
     return render(request, "admin/estudiantes/index.html")
 
-@require_role("admin", "secretaria")
+@require_role("admin")
 @ensure_csrf_cookie
 def admin_est_listado(request):
     return render(request, "admin/estudiantes/listado.html")
 
-@require_role("admin", "secretaria")
+@require_role("admin")
 @ensure_csrf_cookie
 def admin_est_registrar(request):
     return render(request, "admin/estudiantes/registrar.html")
 
-@require_role("admin", "secretaria") 
+@require_role("admin") 
 @ensure_csrf_cookie
 def admin_est_actualizar(request, id_est=None):
-    # si quieres, pasa el id al template: {"id_est": id_est}
     return render(request, "admin/estudiantes/actualizar.html", {"id_est": id_est})
 
 @require_role("admin")                 # eliminar SOLO admin
@@ -85,7 +158,7 @@ def admin_usr_info(request, id_usr=None):
         id_usr = request.session.get("id_usuario_db")  # id del usuario logueado
     return render(request, "admin/tramites/info.html", {"id_usr": id_usr})
 
-#Reportes
+# ---- Reportes (admin) ----
 @require_role("admin")
 def admin_rep_index(request):        # menú/landing del módulo estudiantes
     return render(request, "admin/tramites/index.html")

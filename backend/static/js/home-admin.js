@@ -50,12 +50,7 @@ btnUser.addEventListener('click', (e)=>{
 
 uClose.addEventListener('click', ()=>{
   userMenu.classList.remove('open');
-  openConfirm({
-    title:'¿Quieres ver tu información',
-    confirmText:'Si',
-    cancelText:'No',
-    onConfirm:()=>{ window.location.href = window.ADMIN_INFO_URL || '../tramites/info.html'; }
-  });
+  window.location.href = window.ADMIN_INFO_URL || '../tramites/info.html';
 });
 
 uLogout.addEventListener('click', ()=>{

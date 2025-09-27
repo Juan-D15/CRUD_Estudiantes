@@ -347,6 +347,19 @@ def get_usuario_info(id_usuario: int):
         cols = [c[0] for c in cur.description]
     return dict(zip(cols, row))
 
+def actualizar_contrasena(id_usuario: int, pwd_actual: str, pwd_nueva: str, pwd_confirm: str) -> int:
+    sql = """
+    DECLARE @rc INT;
+    EXEC @rc = dbo.sp_ActualizarContrasena
+      @idUsuario=%s, @pwdActual=%s, @pwdNueva=%s, @pwdConfirm=%s;
+    SELECT @rc;
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql, [id_usuario, pwd_actual, pwd_nueva, pwd_confirm])
+        rc, = cur.fetchone()
+    return int(rc)
+
+
 # -----------------------
 # Reportes
 # -----------------------
@@ -376,8 +389,10 @@ def rep_accesos(usuario=None, estado=None, f_ini=None, f_fin=None, accion=None, 
         params.append(f_fin)
 
     sql = f"""
-    SELECT a.idAcceso, COALESCE(u.usuario, a.usuarioTxt) AS usuario,
-           a.fechaHora, a.exito, a.accion, a.ip, a.dispositivo, a.motivo
+    SELECT a.idAcceso,
+           COALESCE(u.usuario, a.usuarioTxt) AS usuario,
+           a.fechaHora, a.exito, a.accion, a.ip, a.dispositivo, a.motivo,
+           u.estado AS estadoUsuario                -- <--- NUEVO
     FROM dbo.tbBitacoraAcceso a
     LEFT JOIN dbo.tbUsuario u ON u.idUsuario = a.idUsuario
     {"WHERE " + " AND ".join(where) if where else ""}
@@ -416,7 +431,8 @@ def rep_transacciones(usuario=None, entidad=None, operacion=None, f_ini=None, f_
 
     sql = f"""
     SELECT t.idTransaccion, u.usuario, t.fechaHora, t.entidad, t.operacion, t.idAfectado,
-           t.datosAnterior, t.datosNuevo
+           t.datosAnterior, t.datosNuevo,
+           u.estado AS estadoUsuario                -- <--- NUEVO
     FROM dbo.tbBitacoraTransacciones t
     JOIN dbo.tbUsuario u ON u.idUsuario = t.idUsuario
     {"WHERE " + " AND ".join(where) if where else ""}
@@ -460,7 +476,17 @@ def rep_datos_personales(rol=None, estado=None):
         params.append(estado)
 
     sql = f"""
-    SELECT idUsuario, usuario, nombreCompleto, correo, rol, estado, fechaCreacion
+    SELECT
+        idUsuario,
+        usuario,
+        nombreCompleto,
+        correo,
+        rol,
+        estado,
+        ultimoCambioPwd,
+        intentosFallidos,
+        must_reset,
+        fechaCreacion
     FROM dbo.tbUsuario
     {"WHERE " + " AND ".join(where) if where else ""}
     ORDER BY fechaCreacion DESC, idUsuario DESC

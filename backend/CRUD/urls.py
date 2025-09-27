@@ -46,23 +46,26 @@ urlpatterns = [
     path("api/usuarios/<int:id_usr>", api.api_usr_detalle, name="api_usr_detalle"),
     path("admin/usuarios/info", pages.admin_usr_info, name="admin_usr_info"),
     path("admin/usuarios/info/<int:id_usr>", pages.admin_usr_info, name="admin_usr_info"),
-    #path("admin/usuarios/bloquear/<int:id_usr>",   pages.admin_usr_bloquear,   name="admin_usr_bloquear"),
-    #path("admin/usuarios/desbloquear/<int:id_usr>",pages.admin_usr_desbloquear,name="admin_usr_desbloquear"),
 
     # Reportes (admin)
     path("admin/reportes", pages.admin_rep_index, name="admin_rep_index"),
     path("admin/reportes/reportes", pages.admin_rep_reportes, name="admin_rep_reportes"),
-    #path("admin/reportes/ultima-conexion", pages.admin_rep_ultima_conexion, name="admin_rep_ultima_conexion"),
-    #path("admin/reportes/tiempo-promedio", pages.admin_rep_tiempo_promedio, name="admin_rep_tiempo_promedio"),
     
-    
-    # Vistas Secretaria
-    #path("secretaria/home", pages.secretaria_home_page, name="secretaria_home"),
+    # Vistas Secretaría
+    path("secretaria/home", pages.secre_home_page, name="secretaria_home"),
+
     # Estudiantes (secretaría)
-    #path("secretaria/estudiantes/listado",   pages.secretaria_est_listado,   name="secretaria_est_listado"),
-    #path("secretaria/estudiantes/registrar", pages.secretaria_est_registrar, name="secretaria_est_registrar"),
-    #path("secretaria/estudiantes/actualizar/<int:id_est>", pages.secretaria_est_actualizar, name="secretaria_est_actualizar"),
-    #path("secretaria/estudiantes/ver/<int:id_est>", pages.secretaria_est_ver, name="secretaria_est_ver"),
+    path("secretaria/estudiantes",                 pages.secre_est_index,     name="secre_est_index"),
+    path("secretaria/estudiantes/listado",         pages.secre_est_listado,   name="secre_est_listado"),
+    path("secretaria/estudiantes/registrar",       pages.secre_est_registrar, name="secre_est_registrar"),
+    path("secretaria/estudiantes/actualizar",      pages.secre_est_actualizar, name="secre_est_actualizar"),
+    path("secretaria/estudiantes/actualizar/<int:id_est>", pages.secre_est_actualizar, name="secre_est_actualizar"),
+
+    # Gestión de cuenta (secretaría)
+    path("secretaria/cuenta",         pages.secre_usr_index, name="secre_usr_index"),
+    path("secretaria/cuenta/info",    pages.secre_usr_info,  name="secre_usr_info"),
+   # path("secretaria/cuenta/info/<int:id_usr>", pages.secre_usr_info, name="secre_usr_info"),
+
 
     # API
     #Estudiantes (admin, secretaria)
@@ -79,11 +82,12 @@ urlpatterns = [
     path("api/usuarios/<int:id_usr>/eliminar",    api.api_usr_eliminar,     name="api_usr_eliminar"),    # DELETE: eliminar
     path("api/usuarios/<int:id_usr>/bloquear",    api.api_usr_bloquear,     name="api_usr_bloquear"),    # POST: bloquear
     path("api/usuarios/<int:id_usr>/desbloquear", api.api_usr_desbloquear,  name="api_usr_desbloquear"), # POST: desbloquear
+    path("api/cuenta/password/cambiar", api.api_cambiar_password_autenticado, name="api_cambiar_password_autenticado"),
 
-    # ================== Reportes (SOLO ADMIN) ================================
-    #path("api/reportes/ultima-conexion",  api.api_rep_ultima_conexion, name="api_rep_ultima_conexion"), # GET
-    #path("api/reportes/tiempo-promedio",  api.api_rep_tiempo_promedio, name="api_rep_tiempo_promedio"), # GET
-    
+    # Reportes (admin)
+    path("api/reportes/filtros", api.api_reportes_filtros, name="api_reportes_filtros"),
+    path("api/reportes/acciones-transacciones", api.api_reportes_acciones_transacciones, name="api_reportes_acciones_transacciones"),
+
     # JSON
     path("api/reportes/ultima-conexion",  api.api_rep_ultima_conexion, name="api_rep_ultima_conexion"),
     path("api/reportes/tiempo-promedio",  api.api_rep_tiempo_promedio, name="api_rep_tiempo_promedio"),

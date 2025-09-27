@@ -1,0 +1,109 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portal de control de estudiantes</title>
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+
+</head>
+<body>
+  <div class="frame">
+
+    <!-- Volver  -->
+    <a class="back" href="{% url 'secretaria_home' %}" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+
+    <!-- Contenido existente -->
+    <div class="content">
+      <header class="hero">
+        <h1 class="title">BIENVENIDO</h1>
+        <p class="subtitle">Portal de control de estudiantes</p>
+
+        <div class="logo" aria-label="Logo del portal" role="img">
+          <svg viewBox="0 0 64 64" width="72" height="72" aria-hidden="true">
+            <path d="M10 24l22-8 22 8-22 8-22-8z" fill="none" stroke="white" stroke-width="2"/>
+            <path d="M21 30v6c6 3 16 3 22 0v-6" fill="none" stroke="white" stroke-width="2" />
+            <circle cx="52" cy="28" r="2" fill="white"/>
+            <path d="M52 30v8" stroke="white" stroke-width="2" />
+          </svg>
+        </div>
+      </header>
+
+      <main>
+        <section class="cards cards--3" aria-label="Acciones principales">
+          <a class="card" href="{% url 'secre_est_registrar' %}">
+            <h3>REGISTRAR<br>NUEVO<br>ESTUDIANTE</h3>
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="4" y="3" width="10" height="14" rx="1.5" fill="none" stroke="white" stroke-width="1.6"/>
+                <path d="M9 6h3M7 9h5M7 12h5" stroke="white" stroke-width="1.6" />
+                <path d="M14.5 13.5l4.5-4.5 2 2-4.5 4.5-2.2.6.7-2.6z"
+                      fill="none" stroke="white" stroke-width="1.6" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </a>
+
+          <a class="card" href="{% url 'secre_est_actualizar' %}">
+            <h3>ACTUALIZAR<br>REGISTRO DE<br>ESTUDIANTE</h3>
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="9" r="3" fill="none" stroke="white" stroke-width="1.6"/>
+                <path d="M6 19c0-2.2 2.7-4 6-4s6 1.8 6 4" fill="none" stroke="white" stroke-width="1.6"/>
+                <path d="M8 5a7 7 0 018-1M16 19a7 7 0 01-8 1" fill="none" stroke="white" stroke-width="1.6"
+                      stroke-linecap="round"/>
+                <path d="M15.5 3.5L17 6l-3 .2" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M8.5 20.5L7 18l3-.2" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </a>
+
+          <a class="card" href="{% url 'secre_est_listado' %}">
+            <h3>CONSULTAR<br>LISTADO DE<br>ESTUDIANTES</h3>
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="4" y="4" width="10" height="14" rx="1.5" fill="none" stroke="white" stroke-width="1.6"/>
+                <path d="M6.5 8h5M6.5 11h5M6.5 14h5" stroke="white" stroke-width="1.6" />
+                <circle cx="17.5" cy="15.5" r="3.2" fill="none" stroke="white" stroke-width="1.6"/>
+                <path d="M20 18l2 2" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </a>
+        </section>
+      </main>
+    </div>
+
+    <!-- Barra inferior (dock) -->
+    <nav class="dock">
+      <a class="dock-item is-active" aria-current="page"
+      href="{% url 'secre_est_index' %}" aria-label="Estudiantes">
+        <svg viewBox="0 0 64 64" class="dock-svg" aria-hidden="true">
+          <path d="M8 24l24-8 24 8-24 8-24-8z" class="stroke"/>
+          <path d="M14 28v10c0 3 10 9 18 9s18-6 18-9V28" class="stroke"/>
+        </svg>
+      </a>
+      <a class="dock-item" href="{% url 'secre_usr_index' %}" aria-label="Trámites">
+        <!-- Tuerca en mini -->
+        <svg viewBox="0 0 64 64" class="dock-svg" aria-hidden="true">
+            <path class="stroke"
+                d="M32 11
+                    L47 20
+                    L47 44
+                    L32 53
+                    L17 44
+                    L17 20  Z"
+                vector-effect="non-scaling-stroke"
+                stroke-linejoin="round"/>
+            <circle class="stroke" cx="32" cy="32" r="6"/>
+        </svg>
+      </a>
+    </nav>
+
+  </div>
+</body>
+</html>

@@ -20,6 +20,7 @@ from .db import (
     sp_est_eliminar,
     sp_usr_listar,
     actualizar_usuario,
+    actualizar_contrasena,
     sp_usr_eliminar,
     registrar_usuario,
     bloquear_usuario,
@@ -125,6 +126,9 @@ def api_eliminar(request, id_est: int):
 # APIs Usuarios
 #-------------------------
 
+# ---------------------------
+# API: Crear
+# ---------------------------
 @require_role("admin")
 @require_http_methods(["POST"])
 def api_usr_crear(request):
@@ -154,6 +158,9 @@ def api_usr_crear(request):
 
     return JsonResponse({"ok": True})
 
+# ---------------------------
+# API: Listar
+# ---------------------------
 @require_role("admin")
 @require_http_methods(["GET"])
 def api_usr_listar(request):
@@ -190,15 +197,20 @@ def api_usr_listar(request):
 
     return JsonResponse({"ok": True, "data": data})
 
-@require_role("admin")
+# ---------------------------
+# API: Detalle
+# ---------------------------
+@require_role("admin", "secretaria")
 @require_http_methods(["GET"])
 def api_usr_detalle(request, id_usr: int):
-    """
-    GET /api/usuarios/<id>
-    Devuelve { rc:0, user:{...} } si existe; { rc:6 } con 404 si no.
-    """
+    # si viene 0 o vacío, usar el id de la sesión
     if not id_usr:
         id_usr = request.session.get("id_usuario_db")
+
+    # secretaria solo puede verse a sí misma
+    if (request.session.get("rol") or "").lower() == "secretaria":
+        if id_usr != request.session.get("id_usuario_db"):
+            return JsonResponse({"rc": 13, "msg": "No autorizado"}, status=403)
 
     info = get_usuario_info(id_usr)
     if not info:
@@ -215,14 +227,20 @@ def api_usr_detalle(request, id_usr: int):
     }
     return JsonResponse({"rc": 0, "user": data})
 
-@require_role("admin")
+# ---------------------------
+# API: Actualizar
+# ---------------------------
+@require_role("admin", "secretaria")
 @require_http_methods(["PUT"])
 def api_usr_actualizar(request, id_usr: int):
     """
-    Actualiza datos del usuario. Si detecta cambio de estado,
-    aplica bloqueo/desbloqueo usando los SPs correspondientes.
+    PUT /api/usuarios/<id>/actualizar
+    - Secretaría: solo puede editar su propio perfil (nombre y usuario). No puede cambiar rol/estado/correo.
+    - Admin: puede cambiar también rol/estado/correo; si se bloquea a sí mismo, se cierra sesión y se redirige.
     """
-    import json
+    from django.db import connection
+
+    # --- Body JSON
     try:
         body = json.loads(request.body.decode("utf-8") or "{}")
     except Exception:
@@ -232,57 +250,111 @@ def api_usr_actualizar(request, id_usr: int):
     nuevo_nombre  = (body.get("nombreCompleto") or "").strip()
     nuevo_correo  = (body.get("correo") or "").strip().lower()
     nuevo_estado  = (body.get("estado") or "").strip().lower()
+    nuevo_rol     = (body.get("rol") or "").strip().lower()
 
-    # Toma el rol actual si el front no lo envía
+    # --- Identidad / permisos por rol
+    session_id = request.session.get("id_usuario_db")
+    rol_sesion = (request.session.get("rol") or "").lower()
+    if not id_usr or int(id_usr) == 0:
+        id_usr = session_id
+    if rol_sesion == "secretaria" and int(id_usr) != int(session_id or -1):
+        return JsonResponse({"rc": 13, "msg": "No autorizado"}, status=403)
+
+    # --- Datos actuales del usuario
     info = get_usuario_info(id_usr)
     if not info:
         return JsonResponse({"rc": 6, "msg": "Usuario no existe."})
-    rol_actual   = (info.get("rol") or "admin").strip().lower()
+    rol_actual    = (info.get("rol") or "admin").strip().lower()
     estado_actual = (info.get("estado") or "activo").strip().lower()
 
-    nuevo_rol = (body.get("rol") or rol_actual).strip().lower()
     if nuevo_rol not in ("admin", "secretaria"):
         nuevo_rol = rol_actual
     if nuevo_estado not in ("activo", "bloqueado"):
         nuevo_estado = estado_actual
 
-    id_admin = request.session.get("id_usuario_db")
+    # Secretaría no puede modificar correo/rol/estado
+    if rol_sesion == "secretaria":
+        nuevo_correo = (info.get("correo") or "").strip().lower()
+        nuevo_rol    = rol_actual
+        nuevo_estado = estado_actual
 
-    # 1) Actualiza datos de perfil SIN tocar el estado (lo tratamos en el paso 2)
+    if not nuevo_usuario or not nuevo_nombre:
+        return JsonResponse({"rc": 1, "msg": "Dato inválido."}, status=400)
+
+    # --- Unicidad del username (insensible a mayúsculas), excluyéndome
+    with connection.cursor() as cur:
+        cur.execute("""
+            SELECT COUNT(*) 
+            FROM dbo.tbUsuario 
+            WHERE LOWER(usuario)=LOWER(%s) AND idUsuario<>%s
+        """, [nuevo_usuario, id_usr])
+        if cur.fetchone()[0]:
+            return JsonResponse({"rc": 2, "msg": "Usuario duplicado."}, status=400)
+
+    actor_id = session_id
+
+    # 1) Intento normal (tu SP/función)
     rc = actualizar_usuario(
         id_usr,
         nuevo_usuario,
         nuevo_nombre,
-        nuevo_correo,
+        (nuevo_correo or (info.get("correo") or "").strip().lower()),
         nuevo_rol,
-        estado_actual,     # <- no cambiamos estado aquí
-        id_admin
+        estado_actual,  # el estado se trata después
+        actor_id
     )
+
+    # 1.b Fallback: si el SP dice "no existe", actualizamos POR ID directamente
+    if rc == 6:
+        try:
+            with connection.cursor() as cur:
+                cur.execute("""
+                    UPDATE dbo.tbUsuario
+                       SET usuario       = %s,
+                           nombreCompleto= %s,
+                           correo        = %s,
+                           rol           = %s
+                     WHERE idUsuario     = %s
+                """, [nuevo_usuario,
+                      nuevo_nombre,
+                      (nuevo_correo or (info.get("correo") or "").strip().lower()),
+                      nuevo_rol,
+                      id_usr])
+                if cur.rowcount == 1:
+                    rc = 0  # lo dimos por actualizado correctamente
+        except Exception:
+            pass
+
     if rc != 0:
         msg_map = {
-            0: "Actualizado correctamente.",
-            1: "Falta un dato requerido o valor inválido.",
-            2: "El nombre de usuario ya existe.",
-            3: "El correo ya existe.",
-            5: "Error del servidor.",
-            6: "No existe o no autorizado.",
+            0: "OK", 1: "Dato inválido.", 2: "Usuario duplicado.",
+            3: "Correo duplicado.", 5: "Error.", 6: "No existe."
         }
         return JsonResponse({"rc": rc, "msg": msg_map.get(rc, "No se pudo actualizar.")})
 
-    # 2) Si cambió el estado, ejecuta el SP específico
-    if nuevo_estado != estado_actual:
+    # 2) Cambio de estado (solo admin)
+    redirect_url = None
+    if rol_sesion != "secretaria" and nuevo_estado != estado_actual:
         if nuevo_estado == "bloqueado":
-            rc2 = bloquear_usuario(id_admin, id_usr)
+            rc2 = bloquear_usuario(actor_id, id_usr)
             if rc2 != 0:
                 return JsonResponse({"rc": rc2, "msg": "No se pudo bloquear."})
+            if int(id_usr) == int(actor_id):
+                request.session.flush()
+                try:
+                    redirect_url = reverse("login_select")
+                except Exception:
+                    redirect_url = reverse("admin_login")
         elif nuevo_estado == "activo":
-            rc2 = desbloquear_usuario(id_admin, id_usr)
+            rc2 = desbloquear_usuario(actor_id, id_usr)
             if rc2 != 0:
                 return JsonResponse({"rc": rc2, "msg": "No se pudo desbloquear."})
 
-    return JsonResponse({"rc": 0, "msg": "Actualizado correctamente."})
+    return JsonResponse({"rc": 0, "msg": "Actualizado correctamente.", "redirect": redirect_url})
 
-
+# ---------------------------
+# API: Eliminar
+# ---------------------------
 @require_role("admin")
 @require_http_methods(["DELETE"])
 def api_usr_eliminar(request, id_usr: int):
@@ -303,6 +375,9 @@ def api_usr_eliminar(request, id_usr: int):
     ok = (rc == 0)
     return JsonResponse({"ok": ok, "rc": rc, "msg": msg_map.get(rc, "Error")}, status=(200 if ok else 400))
 
+# ---------------------------
+# API: Bloquear
+# ---------------------------
 @require_role("admin")
 @require_http_methods(["POST"])
 def api_usr_bloquear(request, id_usr: int):
@@ -323,7 +398,9 @@ def api_usr_bloquear(request, id_usr: int):
 
     return JsonResponse({"ok": True})
 
-
+# ---------------------------
+# API: Desbloquear
+# ---------------------------
 @require_role("admin")
 @require_http_methods(["POST"])
 def api_usr_desbloquear(request, id_usr: int):
@@ -343,6 +420,38 @@ def api_usr_desbloquear(request, id_usr: int):
         return JsonResponse({"ok": False, "rc": rc, "msg": msg}, status=400)
 
     return JsonResponse({"ok": True})
+
+# ---------------------------
+# API: Cambiar contraseña autenticado
+# ---------------------------
+@require_role("admin", "secretaria")  
+@require_http_methods(["POST"])
+def api_cambiar_password_autenticado(request):
+    body = _json_body(request)
+    p0 = (body.get("actual") or "").strip()
+    p1 = (body.get("nueva") or "").strip()
+    p2 = (body.get("confirm") or "").strip()
+    idu = request.session.get("id_usuario_db")
+
+    if not idu:
+        return JsonResponse({"ok": False, "msg": "Sesión inválida."}, status=401)
+
+    rc = actualizar_contrasena(idu, p0, p1, p2)
+
+    # Códigos típicos del SP 
+    MSG = {
+        0: "OK",
+        1: "Datos requeridos.",
+        2: "La contraseña actual no coincide.",
+        4: "Contraseña débil (8+, mayús, minús, número y símbolo).",
+        9: "La confirmación de contraseña no coincide.",
+        5: "Error general."
+    }
+    if rc != 0:
+        return JsonResponse({"ok": False, "rc": rc, "msg": MSG.get(rc, "Error")}, status=400)
+
+    return JsonResponse({"ok": True})
+
 
 
 #---------------------------------------
@@ -411,6 +520,53 @@ def api_rep_datos_personales(request):
     return JsonResponse({"ok": True, "data": data})
 
 # ===================== EXPORTS =====================
+@require_role("admin")
+@require_http_methods(["GET"])
+def api_reportes_acciones_transacciones(request):
+    # lista simple para llenar el combo de acciones
+    return JsonResponse({
+        "ok": True,
+        "acciones": ["INSERT","UPDATE","DELETE","CREATE","BLOCK","UNBLOCK","CHANGE_PASSWORD","RESET_PASSWORD"]
+    })
+
+@require_role("admin")
+@require_http_methods(["GET"])
+def api_reportes_filtros(request):
+    fuente  = (request.GET.get("fuente") or "accesos").lower()
+    usuario = (request.GET.get("usuario") or "").strip()
+    rol     = (request.GET.get("rol") or "").strip().lower() or None
+    estado  = (request.GET.get("estado") or "").strip().lower() or None  # activo|bloqueado
+    accion  = (request.GET.get("accion") or "").strip()
+
+    # helpers de fecha que ya tienes en este mismo archivo
+    from .views import _get_date  # si está en este módulo; si no, muévelo arriba
+    f_ini = _get_date(request.GET, "desde")
+    f_fin = _get_date(request.GET, "hasta")
+
+    if fuente == "usuarios":
+        rows = rep_datos_personales(rol=rol, estado=estado)
+        if usuario:
+            u = usuario.lower()
+            rows = [r for r in rows if u in (r.get("usuario","").lower()
+                      + r.get("correo","").lower()
+                      + r.get("nombreCompleto","").lower())]
+        return JsonResponse({"ok": True, "rows": rows})
+
+    if fuente == "transacciones":
+        rows = rep_transacciones(usuario=(usuario or None),
+                                 entidad=None, operacion=(accion or None),
+                                 f_ini=f_ini, f_fin=f_fin)
+        if estado in ("activo","bloqueado"):
+            rows = [r for r in rows if (r.get("estadoUsuario","") or "").lower() == estado]
+        return JsonResponse({"ok": True, "rows": rows})
+
+    # accesos (por defecto)
+    rows = rep_accesos(usuario=(usuario or None),
+                       estado=None,  # ¡OJO! aquí 'estado' del SP es exito/fallo; no lo usamos
+                       f_ini=f_ini, f_fin=f_fin, accion=(accion or None))
+    if estado in ("activo","bloqueado"):
+        rows = [r for r in rows if (r.get("estadoUsuario","") or "").lower() == estado]
+    return JsonResponse({"ok": True, "rows": rows})
 
 @require_role("admin")
 @require_http_methods(["GET"])

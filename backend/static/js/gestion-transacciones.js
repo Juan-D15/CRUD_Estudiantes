@@ -1,431 +1,562 @@
-/* ====== Datos DEMO (reemplaza con fetch al backend) ====== */
-const demoAccesos = [
-  { usuario:"admin",     fecha:"2025-06-10 09:12", estado:"éxito" },
-  { usuario:"secretaria",fecha:"2025-06-10 09:18", estado:"fallo" },
-  { usuario:"luz.a",     fecha:"2025-06-10 09:21", estado:"éxito" },
-  { usuario:"oscar.r",   fecha:"2025-06-10 10:01", estado:"fallo" },
-];
+/* ==========================================================
+   Reportes – Transacciones, Accesos, Utilidad
+   ========================================================== */
 
-const demoTrans = [
-  { fecha:"2025-06-09 12:10", accion:"crear_usuario",        detalle:"marta.s" },
-  { fecha:"2025-06-09 12:25", accion:"insertar_estudiante",  detalle:"ID:124" },
-  { fecha:"2025-06-09 13:02", accion:"cambiar_password",     detalle:"usuario oscar.r" },
-  { fecha:"2025-06-09 15:47", accion:"eliminar_estudiante",  detalle:"ID:119" },
-  { fecha:"2025-06-09 18:00", accion:"eliminar_usuario",     detalle:"juan.tmp" },
-];
+document.addEventListener('DOMContentLoaded', () => {
+  // ---------- utils ----------
+  const $  = (s, c=document)=>c.querySelector(s);
+  const $$ = (s, c=document)=>[...c.querySelectorAll(s)];
 
-let demoUsuarios = [
-  { id:1, usuario:"admin",      nombre:"Administrador General", correo:"admin@dominio.com",   rol:"admin",      estado:"activo",    ultima:"2025-06-10 09:12" },
-  { id:2, usuario:"marta.s",    nombre:"Marta Sánchez",         correo:"marta@dominio.com",   rol:"secretaria", estado:"activo",    ultima:"2025-06-10 08:55" },
-  { id:3, usuario:"oscar.r",    nombre:"Óscar Rubio",           correo:"oscar@dominio.com",   rol:"secretaria", estado:"bloqueado", ultima:"2025-06-08 16:40" },
-  { id:4, usuario:"luz.a",      nombre:"Luz Arriola",           correo:"luz@dominio.com",     rol:"admin",      estado:"activo",    ultima:"2025-06-09 19:02" },
-];
+  const overlay     = $('#overlay');
+  const modal       = $('#modal');
+  const modalTitle  = $('#modal-title');
+  const modalBody   = $('#modal-body');
+  const btnClose    = $('#btnClose');
+  const extraBar    = $('#extra-actions');             // barra para export/acciones
+  const btnAdd      = $('#btnAddReport');              // "Agregar al reporte"
 
-const demoUso = [
-  { usuario:"admin", minutos: 126 },
-  { usuario:"luz.a", minutos: 84  },
-  { usuario:"marta.s", minutos: 58 },
-  { usuario:"oscar.r", minutos: 22 },
-];
+  let currentKey = null;                               // panel activo
+  const selectedForExport = new Set();                 // claves agregadas
 
-/* ====== Util ====== */
-const $ = (s, c=document)=>c.querySelector(s);
-const $$ = (s, c=document)=>[...c.querySelectorAll(s)];
+  function openModal(key, title){
+    currentKey = key || null;
+    modalTitle.textContent = title || '';
+    modalBody.innerHTML = '';
+    if (extraBar) { extraBar.innerHTML = ''; extraBar.classList.add('hidden'); }
 
-function toast(text){
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = text;
-  document.body.appendChild(t);
-  setTimeout(()=> t.remove(), 1800);
-}
-
-/* ====== Estado de “Agregar al reporte” ====== */
-const REPORT_KEY = 'reportSelections:v1';
-let reportSelections = new Set(JSON.parse(localStorage.getItem(REPORT_KEY) || '[]'));
-function saveSelections(){
-  localStorage.setItem(REPORT_KEY, JSON.stringify([...reportSelections]));
-}
-
-/* ====== Modal generic ====== */
-const overlay = $("#overlay");
-const modal   = $("#modal");
-const inner   = $(".modal-inner", modal);
-const titleEl = $("#modal-title");
-const bodyEl  = $("#modal-body");
-const extraEl = $("#extra-actions");
-const btnAdd  = $("#btnAddReport");
-const btnClose= $("#btnClose");
-
-function openModal(kind, title){
-  titleEl.textContent = title;
-  bodyEl.innerHTML = ""; extraEl.innerHTML = ""; extraEl.classList.add('hidden');
-
-  // Estado del botón “Agregar al reporte”
-  btnAdd.dataset.kind = kind;
-  updateAddButton();
-
-  overlay.classList.remove('hidden');
-  modal.classList.remove('hidden');
-  // iniciar animación
-  setTimeout(()=> inner.parentElement.classList.add('show'), 0);
-}
-
-function closeModal(){
-  inner.parentElement.classList.remove('show');
-  setTimeout(()=>{
-    overlay.classList.add('hidden');
-    modal.classList.add('hidden');
-  }, 150);
-}
-
-overlay.addEventListener('click', closeModal);
-btnClose.addEventListener('click', closeModal);
-window.addEventListener('keydown', (ev)=>{ if(ev.key==='Escape') closeModal(); });
-
-btnAdd.addEventListener('click', ()=>{
-  const k = btnAdd.dataset.kind;
-  if(reportSelections.has(k)){
-    reportSelections.delete(k);
-    toast('Sección quitada del reporte');
-  }else{
-    reportSelections.add(k);
-    toast('Sección agregada al reporte');
-  }
-  saveSelections();
-  updateAddButton();
-});
-function updateAddButton(){
-  const k = btnAdd.dataset.kind;
-  if(reportSelections.has(k)){
-    btnAdd.textContent = 'Agregado ✓';
-    btnAdd.classList.add('ghost');
-  }else{
-    btnAdd.textContent = 'Agregar al reporte';
-    btnAdd.classList.remove('ghost');
-  }
-}
-
-/* ====== Renderers ====== */
-function table(headers, rows){
-  const wrap = document.createElement('div');
-  wrap.className = 'table-wrap';
-  const tbl = document.createElement('table');
-  tbl.className = 'grid';
-  const thead = document.createElement('thead');
-  thead.innerHTML = `<tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>`;
-  const tbody = document.createElement('tbody');
-  rows.forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = r.map(v=>`<td>${v}</td>`).join('');
-    tbody.appendChild(tr);
-  });
-  tbl.append(thead, tbody);
-  wrap.appendChild(tbl);
-  return wrap;
-}
-
-/* Accesos */
-function renderAccesos(){
-  openModal('accesos','Bitácora de Accesos');
-  const rows = demoAccesos.map(a=>[
-    a.usuario,
-    a.fecha,
-    `<span class="badge ${a.estado==='éxito'?'green':'red'}">${a.estado}</span>`
-  ]);
-  bodyEl.appendChild(table(['Usuario','Fecha / hora','Estado'], rows));
-}
-
-/* Transacciones */
-function renderTrans(){
-  openModal('trans','Bitácora de Transacciones');
-  const rows = demoTrans.map(t=>[t.fecha, t.accion, t.detalle]);
-  bodyEl.appendChild(table(['Fecha / hora','Acción','Detalle'], rows));
-}
-
-/* Últimas conexiones (listado comprimido / expandido) */
-function renderUltimas(){
-  openModal('ultimas','Última Conexión por Usuario');
-  const rows = demoUsuarios.map(u=>[u.usuario, u.ultima]);
-  bodyEl.appendChild(table(['Usuario','Último acceso exitoso'], rows));
-}
-
-/* Usuarios con bloqueo/desbloqueo (solo en modal) */
-function renderUsuarios(){
-  openModal('usuarios','Usuarios del Sistema');
-  const headers = ['ID','Usuario','Nombre completo','Correo','Rol','Estado','Acción'];
-  const rows = demoUsuarios.map(u=>[
-    u.id,
-    u.usuario,
-    u.nombre,
-    u.correo,
-    u.rol === 'admin' ? 'Administrador':'Secretario(a)',
-    `<span class="badge ${u.estado==='activo'?'green':'red'}">${u.estado}</span>`,
-    `<button class="toggle ${u.estado==='activo'?'active':'block'}" data-id="${u.id}">
-        ${u.estado==='activo'?'Activo':'Bloqueado'}
-     </button>`
-  ]);
-  bodyEl.appendChild(table(headers, rows));
-
-  // Delegación: toggle bloqueo
-  bodyEl.addEventListener('click', (e)=>{
-    const tg = e.target.closest('.toggle');
-    if(!tg) return;
-    const id = Number(tg.dataset.id);
-    const user = demoUsuarios.find(x=>x.id===id);
-    if(!user) return;
-    if(user.estado==='activo'){
-      user.estado='bloqueado';
-      tg.classList.remove('active'); tg.classList.add('block'); tg.textContent='Bloqueado';
-      demoTrans.push({fecha:new Date().toISOString().slice(0,16).replace('T',' '), accion:'bloquear_usuario', detalle:user.usuario});
-      toast('Usuario bloqueado');
-    }else{
-      user.estado='activo';
-      tg.classList.add('active'); tg.classList.remove('block'); tg.textContent='Activo';
-      demoTrans.push({fecha:new Date().toISOString().slice(0,16).replace('T',' '), accion:'desbloquear_usuario', detalle:user.usuario});
-      toast('Usuario desbloqueado');
+    // actualizar texto del botón "Agregar al reporte"
+    if (btnAdd) {
+      btnAdd.textContent = selectedForExport.has(key) ? 'Quitar del reporte' : 'Agregar al reporte';
+      btnAdd.disabled = !key; // por si abrimos algo sin key
     }
-    // refrescar badges
-    renderUsuarios();
-  }, { once:true }); // reatacha en cada render
-}
 
-/* Intentos fallidos: tabla + generar archivos */
-function renderFallidos(){
-  openModal('fallidos','Intentos fallidos de login');
+    overlay.classList.remove('hidden');
+    modal.classList.remove('hidden');
+    setTimeout(()=> modal.classList.add('show'), 0);
+  }
+  function closeModal(){
+    modal.classList.remove('show');
+    setTimeout(()=>{
+      overlay.classList.add('hidden');
+      modal.classList.add('hidden');
+    }, 150);
+  }
+  overlay?.addEventListener('click', closeModal);
+  btnClose?.addEventListener('click', closeModal);
 
-  // Simulación: derivar de demoAccesos
-  const fall = demoAccesos
-    .filter(a=>a.estado==='fallo')
-    .map((f,i)=> ({ usuario:f.usuario, fecha:f.fecha, ip:`10.0.0.${50+i}`, motivo:"contraseña incorrecta" }));
-
-  const rows = fall.map(x=>[x.usuario, x.fecha, x.ip, x.motivo]);
-  bodyEl.appendChild(table(['Usuario','Fecha / hora','IP/Dispositivo','Motivo'], rows));
-
-  // Acciones extra
-  extraEl.classList.remove('hidden');
-  extraEl.innerHTML = `
-    <button id="btnLog"  class="btn-primary">Generar .log</button>
-    <button id="btnPDF"  class="btn-outline">Exportar PDF</button>
-  `;
-
-  // Generar LOG
-  $("#btnLog").addEventListener('click', ()=>{
-    const lines = fall.map(x=>`[${x.fecha}] user="${x.usuario}" ip=${x.ip} motivo="${x.motivo}"`).join('\n');
-    const blob = new Blob([lines], {type:'text/plain'});
-    const url = URL.createObjectURL(blob);
-    const a = Object.assign(document.createElement('a'), { href:url, download:'intentos_fallidos.log' });
-    a.click(); URL.revokeObjectURL(url);
-    toast('Archivo .log generado');
+  // toggle agregar/quitar al reporte
+  btnAdd?.addEventListener('click', () => {
+    if (!currentKey) return;
+    if (selectedForExport.has(currentKey)) {
+      selectedForExport.delete(currentKey);
+      btnAdd.textContent = 'Agregar al reporte';
+    } else {
+      selectedForExport.add(currentKey);
+      btnAdd.textContent = 'Quitar del reporte';
+    }
   });
 
-  // Exportar a “PDF” (versión imprimible)
-  $("#btnPDF").addEventListener('click', ()=>{
-    const w = window.open('','_blank');
-    w.document.write(`
-      <html><head><title>Intentos fallidos</title>
-      <style>body{font-family:Inter,Arial;margin:18px;} table{border-collapse:collapse;width:100%}
-      th,td{border:1px solid #999;padding:8px;text-align:left} th{background:#eee}</style>
-      </head><body>
-      <h2>Intentos fallidos de login</h2>
-      <table><thead><tr><th>Usuario</th><th>Fecha / hora</th><th>IP</th><th>Motivo</th></tr></thead>
-      <tbody>${fall.map(x=>`<tr><td>${x.usuario}</td><td>${x.fecha}</td><td>${x.ip}</td><td>${x.motivo}</td></tr>`).join('')}</tbody>
-      </table></body></html>`);
-    w.document.close(); w.focus(); w.print();
-  });
-}
-
-/* Promedio de uso: Donas + Barras (SVG) */
-function renderUso(){
-  openModal('uso','Promedio de uso');
-
-  // Datos resumidos por rol
-  const sumRole = role => demoUso
-    .filter(u=> role==='admin' ? ['admin'].includes(u.usuario) || u.usuario==='admin' : true)
-  const adminM = demoUso.filter(u=>u.usuario==='admin' || u.usuario==='luz.a' && false).reduce((a,b)=>a+(b.usuario==='admin'?b.minutos:0),0);
-  const secM   = demoUso.filter(u=>u.usuario!=='admin').reduce((a,b)=>a+b.minutos,0);
-
-  const donut = (label, val, max=240)=>{ // 240min = 4h referencia
-    const pct = Math.min(100, Math.round(val/max*100));
-    const R=40, C=2*Math.PI*R, dash = (pct/100)*C;
-    return `
-      <div class="chart">
-        <h4>${label}: ${val} min</h4>
-        <svg class="donut-svg" viewBox="0 0 120 120" width="210" height="210">
-          <circle class="bg" cx="60" cy="60" r="40" fill="none" stroke-width="12"/>
-          <circle class="val" cx="60" cy="60" r="40" fill="none" stroke-width="12"
-                  stroke-dasharray="${dash} ${C-dash}" transform="rotate(-90 60 60)"/>
-        </svg>
-      </div>`;
+  async function fetchJSON(url){
+    const r = await fetch(url, { credentials:'same-origin', cache:'no-store' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  }
+  const fmtDate = s => {
+    if (!s) return '';
+    const d = new Date(s); return isNaN(d) ? s : d.toLocaleString();
+  };
+  const chipEstado = estado => {
+    const ok = String(estado||'').toLowerCase()==='activo';
+    return `<span class="badge ${ok?'green':'red'}">${ok?'activo':'bloqueado'}</span>`;
   };
 
-  const bars = ()=>{
-    const max = Math.max(...demoUso.map(u=>u.minutos), 1);
-    const barW = 40, gap = 18, pad=28, H=180;
-    const width = pad*2 + demoUso.length*barW + (demoUso.length-1)*gap;
-    const rects = demoUso.map((u,i)=>{
-      const h = Math.round((u.minutos/max)*H);
-      const x = pad + i*(barW+gap), y = (H - h) + 20;
-      return `<rect class="bar" x="${x}" y="${y}" width="${barW}" height="${h}"/>
-              <text x="${x+barW/2}" y="${H+38}" text-anchor="middle" font-size="12" fill="#fff">${u.usuario}</text>
-              <text x="${x+barW/2}" y="${y-6}" text-anchor="middle" font-size="12" fill="#b574ff">${u.minutos}</text>`;
-    }).join('');
-    return `
-      <div class="chart">
-        <h4>Uso por usuario (min)</h4>
-        <svg class="bar-svg" viewBox="0 0 ${width} ${H+60}" width="${width}" height="${H+60}">
-          ${rects}
-        </svg>
-      </div>`;
+  function table(headers, rows){
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    const tbl = document.createElement('table');
+    tbl.className = 'grid';
+
+    const thead = document.createElement('thead');
+    thead.innerHTML = `<tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>`;
+
+    const tbody = document.createElement('tbody');
+    rows.forEach(r=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = r.map(v=>`<td>${v}</td>`).join('');
+      tbody.appendChild(tr);
+    });
+
+    tbl.append(thead, tbody);
+    wrap.appendChild(tbl);
+    return wrap;
+  }
+
+  function exportRowsToPDF(title, headers, rows){
+    const html = `
+      <html><head><title>${title}</title>
+      <style>
+        body{font-family:Inter,Arial;margin:18px;}
+        h2{margin:0 0 12px}
+        table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #999;padding:8px;text-align:left}
+        th{background:#eee}
+      </style></head><body>
+      <h2>${title}</h2>
+      <table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      </body></html>`;
+    const w = window.open('','_blank');
+    w.document.write(html);
+    w.document.close(); w.focus(); w.print();
+  }
+
+  // ----- barra de exportación por panel -----
+  function showExportBar(kind, headers, rows){
+    if (!extraBar) return;
+    extraBar.innerHTML = '';
+    extraBar.classList.remove('hidden');
+
+    const makeBtn = (id, txt, primary=false) => {
+      const b = document.createElement('button');
+      b.id = id;
+      b.className = primary ? 'btn-primary' : 'btn-outline';
+      b.textContent = txt;
+      return b;
+    };
+
+    if (kind === 'fallidos') {
+      const bLog = makeBtn('btnLog', 'Generar .log', true);
+      const bPDF = makeBtn('btnPDF', 'Exportar PDF', false);
+      extraBar.append(bLog, bPDF);
+
+      bLog.addEventListener('click', () => {
+        const lines = rows.map(r=>`[${r[1]}] user="${r[0]}" ip="${r[2]}" motivo="${r[3]}"`).join('\n');
+        const blob = new Blob([lines], {type:'text/plain'});
+        const url  = URL.createObjectURL(blob);
+        const a    = Object.assign(document.createElement('a'), { href:url, download:'intentos_fallidos.log' });
+        a.click(); URL.revokeObjectURL(url);
+      });
+      bPDF.addEventListener('click', () => exportRowsToPDF('Intentos fallidos de login', headers, rows));
+    } else {
+      const bPDF = makeBtn('btnPDF', 'Exportar PDF', true);
+      extraBar.append(bPDF);
+      bPDF.addEventListener('click', () => exportRowsToPDF(modalTitle.textContent || 'Reporte', headers, rows));
+    }
+  }
+
+  // ---------- acciones ----------
+  const actions = {};
+
+  // Accesos
+  actions.accesos = async () => {
+    openModal('accesos', 'Reporte de Accesos');
+    try{
+      const data = await fetchJSON('/api/reportes/filtros?fuente=accesos');
+      const headers = ['Usuario','Fecha/Hora','Acción','Estado usuario','Motivo'];
+      const rows = (data.rows||[]).map(a=>[
+        a.usuario || a.usuarioTxt || '',
+        fmtDate(a.fechaHora),
+        a.accion || '',
+        chipEstado(a.estadoUsuario || a.estado),
+        a.motivo || ''
+      ]);
+      modalBody.appendChild(table(headers, rows));
+      showExportBar('accesos', headers, rows);
+    }catch(err){
+      modalBody.innerHTML = `<div class="tip error">Error consultando accesos: ${err.message}</div>`;
+    }
   };
 
-  bodyEl.innerHTML = `<div class="charts">
-      ${donut('Administradores', adminM)}
-      ${donut('Secretarías', secM)}
-      ${bars()}
-    </div>`;
-}
-
-/* Exportar: checklist con lo que el usuario marcó previamente */
-function renderExport(){
-  openModal('export','Exportar Reporte');
-
-  const all = [
-    {k:'accesos', t:'Bitácora de Accesos'},
-    {k:'trans',   t:'Bitácora de Transacciones'},
-    {k:'ultimas', t:'Última Conexión por Usuario'},
-    {k:'uso',     t:'Promedio de uso'},
-    {k:'usuarios',t:'Usuarios del Sistema'},
-    {k:'fallidos',t:'Intentos fallidos de login'}
-  ];
-
-  bodyEl.innerHTML = `
-    <form id="formExport" class="export">
-      ${all.map(a=>`
-        <label class="check">
-          <input type="checkbox" name="sec" value="${a.k}" ${reportSelections.has(a.k)?'checked':''}>
-          <span>${a.t}</span>
-        </label>`).join('')}
-    </form>
-    <div class="extra-actions">
-      <button id="btnPDFAll" class="btn-primary">Exportar PDF</button>
-      <button id="btnCSVAll" class="btn-outline">Exportar Excel (.csv)</button>
-    </div>
-  `;
-
-  // PDF: ventana imprimible con tablas simples
-  $("#btnPDFAll").addEventListener('click', ()=>{
-    const sel = $$('#formExport input[name="sec"]:checked').map(i=>i.value);
-    if(!sel.length){ toast('Selecciona al menos una sección'); return; }
-    const sectionsHTML = sel.map(k => sectionHTML(k)).join('<hr/>');
-    const w = window.open('','_blank');
-    w.document.write(`<html><head><title>Reporte</title>
-      <style>body{font-family:Inter,Arial;margin:18px;} table{border-collapse:collapse;width:100%}
-      th,td{border:1px solid #999;padding:8px;text-align:left} th{background:#eee} h2{margin:12px 0}</style>
-      </head><body>${sectionsHTML}</body></html>`);
-    w.document.close(); w.focus(); w.print();
-  });
-
-  // CSV combinado
-  $("#btnCSVAll").addEventListener('click', ()=>{
-    const sel = $$('#formExport input[name="sec"]:checked').map(i=>i.value);
-    if(!sel.length){ toast('Selecciona al menos una sección'); return; }
-    const csv = sel.map(k => sectionCSV(k)).join('\n\n');
-    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = Object.assign(document.createElement('a'), { href:url, download:'reporte.csv' });
-    a.click(); URL.revokeObjectURL(url);
-  });
-}
-
-/* Helpers para exportación */
-function sectionHTML(key){
-  const T = (title, headers, rows) =>
-    `<h2>${title}</h2><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${
-      rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')
-    }</tbody></table>`;
-
-  switch(key){
-    case 'accesos':
-      return T('Bitácora de Accesos',
-        ['Usuario','Fecha / hora','Estado'],
-        demoAccesos.map(a=>[a.usuario,a.fecha,a.estado]));
-    case 'trans':
-      return T('Bitácora de Transacciones',
-        ['Fecha / hora','Acción','Detalle'],
-        demoTrans.map(t=>[t.fecha,t.accion,t.detalle]));
-    case 'ultimas':
-      return T('Última Conexión por Usuario',
-        ['Usuario','Último acceso'],
-        demoUsuarios.map(u=>[u.usuario,u.ultima]));
-    case 'usuarios':
-      return T('Usuarios del Sistema',
-        ['ID','Usuario','Nombre','Correo','Rol','Estado'],
-        demoUsuarios.map(u=>[u.id,u.usuario,u.nombre,u.correo,u.rol,u.estado]));
-    case 'fallidos': {
-      const fall = demoAccesos.filter(a=>a.estado==='fallo')
-        .map((f,i)=> ({ usuario:f.usuario, fecha:f.fecha, ip:`10.0.0.${50+i}`, motivo:"contraseña incorrecta" }));
-      return T('Intentos fallidos de login',
-        ['Usuario','Fecha / hora','IP/Dispositivo','Motivo'],
-        fall.map(x=>[x.usuario,x.fecha,x.ip,x.motivo]));
+  // Transacciones
+  actions.trans = async () => {
+    openModal('trans', 'Reporte de Transacciones');
+    try{
+      const data = await fetchJSON('/api/reportes/filtros?fuente=transacciones');
+      const headers = ['Fecha/Hora','Usuario','Entidad','Operación','Id afectado'];
+      const rows = (data.rows||[]).map(t=>[
+        fmtDate(t.fechaHora), t.usuario, t.entidad, t.operacion, t.idAfectado ?? ''
+      ]);
+      modalBody.appendChild(table(headers, rows));
+      showExportBar('trans', headers, rows);
+    }catch(err){
+      modalBody.innerHTML = `<div class="tip error">Error consultando transacciones: ${err.message}</div>`;
     }
-    case 'uso': {
-      const rows = demoUso.map(u=>[u.usuario,u.minutos]);
-      return T('Promedio de uso por usuario (min)', ['Usuario','Minutos'], rows);
-    }
+  };
+
+  // Usuarios del sistema
+  actions.usuarios = async () => {
+  openModal('usuarios', 'Usuarios del Sistema');
+  try{
+    const data = await fetchJSON('/api/reportes/filtros?fuente=usuarios');
+
+    const headers = [
+      'ID','Usuario','Nombre','Correo','Rol','Estado',
+      'ÚLT. CAMBIO PWD','Intentos','Must reset','Creación'
+    ];
+
+    const rows = (data.rows||[]).map(u=>[
+      u.idUsuario,
+      u.usuario,
+      u.nombreCompleto,
+      u.correo,
+      u.rol,
+      chipEstado(u.estado),
+      fmtDate(u.ultimoCambioPwd),         
+      (u.intentosFallidos ?? 0),
+      (u.must_reset ? 'Sí' : 'No'),
+      fmtDate(u.fechaCreacion)
+    ]);
+
+    modalBody.appendChild(table(headers, rows));
+    showExportBar('usuarios', headers, rows); // export de este panel
+  }catch(err){
+    modalBody.innerHTML = `<div class="tip error">Error consultando usuarios: ${err.message}</div>`;
   }
-}
-
-function sectionCSV(key){
-  const C = (title, headers, rows) =>
-    `${title}\n${headers.join(',')}\n${rows.map(r=>r.join(',')).join('\n')}`;
-
-  switch(key){
-    case 'accesos':
-      return C('Bitácora de Accesos',
-        ['Usuario','Fecha / hora','Estado'],
-        demoAccesos.map(a=>[a.usuario,a.fecha,a.estado]));
-    case 'trans':
-      return C('Bitácora de Transacciones',
-        ['Fecha / hora','Acción','Detalle'],
-        demoTrans.map(t=>[t.fecha,t.accion,t.detalle]));
-    case 'ultimas':
-      return C('Última Conexión por Usuario',
-        ['Usuario','Último acceso'],
-        demoUsuarios.map(u=>[u.usuario,u.ultima]));
-    case 'usuarios':
-      return C('Usuarios del Sistema',
-        ['ID','Usuario','Nombre','Correo','Rol','Estado'],
-        demoUsuarios.map(u=>[u.id,u.usuario,u.nombre,u.correo,u.rol,u.estado]));
-    case 'fallidos': {
-      const fall = demoAccesos.filter(a=>a.estado==='fallo')
-        .map((f,i)=> ({ usuario:f.usuario, fecha:f.fecha, ip:`10.0.0.${50+i}`, motivo:"contraseña incorrecta" }));
-      return C('Intentos fallidos de login',
-        ['Usuario','Fecha / hora','IP/Dispositivo','Motivo'],
-        fall.map(x=>[x.usuario,x.fecha,x.ip,x.motivo]));
-    }
-    case 'uso':
-      return C('Promedio de uso por usuario (min)', ['Usuario','Minutos'], demoUso.map(u=>[u.usuario,u.minutos]));
-  }
-  return '';
-}
-
-/* ====== Enlaces de las tarjetas ====== */
-const actions = {
-  accesos: renderAccesos,
-  trans:   renderTrans,
-  ultimas: renderUltimas,
-  uso:     renderUso,
-  usuarios:renderUsuarios,
-  fallidos:renderFallidos,
-  export:  renderExport,
 };
 
-$$('.card[data-modal]').forEach(card=>{
-  card.addEventListener('click', ()=>{
-    const key = card.dataset.modal;
-    actions[key] && actions[key]();
-  });
-});
 
-/* Fin */
+  // Últimas conexiones exitosas por usuario
+  actions.ultimas = async () => {
+    openModal('ultimas', 'Última Conexión por Usuario');
+    try{
+      const data = await fetchJSON('/api/reportes/filtros?fuente=accesos');
+      const okRow = r => (r.exito===true || r.exito===1 || r.exito==='1' ||
+                           (!r.motivo && String(r.accion||'').toLowerCase().includes('login')));
+      const map = new Map();
+      (data.rows||[]).forEach(r=>{
+        const u = r.usuario || r.usuarioTxt || '';
+        if (!u || !okRow(r)) return;
+        const f = new Date(r.fechaHora);
+        if (!map.has(u) || f > map.get(u)) map.set(u, f);
+      });
+      const headers = ['Usuario','Último acceso exitoso'];
+      const rows = [...map.entries()].sort((a,b)=>b[1]-a[1])
+                   .map(([u,dt])=>[u, dt.toLocaleString()]);
+      modalBody.appendChild(table(headers, rows));
+      showExportBar('ultimas', headers, rows);
+    }catch(err){
+      modalBody.innerHTML = `<div class="tip error">Error consultando últimas conexiones: ${err.message}</div>`;
+    }
+  };
+
+  // Intentos fallidos de login
+  actions.fallidos = async () => {
+    openModal('fallidos', 'Intentos fallidos de login');
+    try{
+      const data = await fetchJSON('/api/reportes/filtros?fuente=accesos');
+      const headers = ['Usuario','Fecha/Hora','IP/Dispositivo','Motivo'];
+      const rows = (data.rows||[])
+        .filter(r => (r.exito===false || r.exito===0 || r.exito==='0'))
+        .map(x=>[
+          x.usuario || x.usuarioTxt || '',
+          fmtDate(x.fechaHora),
+          x.ip || x.dispositivo || '-',
+          x.motivo || 'credenciales inválidas'
+        ]);
+
+      modalBody.appendChild(table(headers, rows));
+      // En fallidos queremos .log + PDF
+      showExportBar('fallidos', headers, rows);
+    }catch(err){
+      modalBody.innerHTML = `<div class="tip error">Error consultando fallidos: ${err.message}</div>`;
+    }
+  };
+
+  // Promedio de uso: Conteo de acciones + Minutos promedio por usuario
+  // Promedio de uso: Conteo de acciones + Promedio en min/horas con selector
+  actions.uso = async () => {
+    openModal('uso', 'Promedio de uso');
+
+    // --- helpers de formato/unidad (sólo para PROMEDIO)
+    let UNIT = 'h'; // 'min' | 'h'
+    const toUnit   = v => UNIT === 'h' ? (v/60) : v;                 // minutos -> unidad elegida
+    const valText  = v => UNIT === 'h' ? (v/60).toFixed(1) : Math.round(v);
+    const unitText = () => UNIT === 'h' ? 'h' : 'min';
+
+    // ------- renderizadores -------
+    const renderBarsCount = (pairs) => {
+      const max   = Math.max(...pairs.map(([,v])=>v), 1);
+      const barW  = 42, gap = 24, pad = 48, top = 24, H = 220, bottom = 80;
+      const W     = pad*2 + pairs.length*barW + (pairs.length-1)*gap;
+      const fmt   = v => String(v); // << definir antes de usar
+
+      const rects = pairs.map(([u,val],i)=>{
+        const h = Math.round((val/max)*H);
+        const x = pad + i*(barW+gap), y = top + (H - h);
+        const label = (u.length>16 ? u.slice(0,15)+'…' : u);
+        return `
+          <g>
+            <rect class="bar" x="${x}" y="${y}" width="${barW}" height="${h}" rx="4"></rect>
+            <text x="${x+barW/2}" y="${y-6}" text-anchor="middle" font-size="12" fill="#b574ff">${fmt(val)}</text>
+            <text transform="translate(${x+barW/2},${top+H+30}) rotate(-35)"
+                  text-anchor="end" font-size="12" fill="#fff" title="${u}">${label}</text>
+          </g>`;
+      }).join('');
+
+      return `
+        <div class="chart">
+          <h4>Acciones por usuario (conteo)</h4>
+          <svg class="bar-svg" viewBox="0 0 ${W} ${top+H+bottom}" width="${W}" height="${top+H+bottom}">
+            ${rects}
+          </svg>
+        </div>`;
+    };
+
+
+    const renderBarsAvg = (pairs) => {
+      const max = Math.max(...pairs.map(([,v])=>v), 1);
+      const barW=42, gap=24, pad=48, top=24, H=220, bottom=80;
+      const W = pad*2 + pairs.length*barW + (pairs.length-1)*gap;
+      const rects = pairs.map(([u,val],i)=>{
+        const h = Math.round((val/max)*H);
+        const x = pad + i*(barW+gap), y = top + (H - h);
+        const label = (u.length>16 ? u.slice(0,15)+'…' : u);
+        return `
+          <g>
+            <rect class="bar" x="${x}" y="${y}" width="${barW}" height="${h}" rx="4"></rect>
+            <text x="${x+barW/2}" y="${y-6}" text-anchor="middle" font-size="12" fill="#b574ff">${valText(val)}</text>
+            <text transform="translate(${x+barW/2},${top+H+30}) rotate(-35)" text-anchor="end" font-size="12" fill="#fff" title="${u}">${label}</text>
+          </g>`;
+      }).join('');
+      return `
+        <div class="chart">
+          <h4>Uso promedio por usuario (${unitText()})</h4>
+          <svg class="bar-svg" viewBox="0 0 ${W} ${top+H+bottom}" width="${W}" height="${top+H+bottom}">
+            ${rects}
+          </svg>
+        </div>`;
+    };
+
+    try {
+      // 1) Conteo por usuario (transacciones)
+      const trans = await fetchJSON('/api/reportes/filtros?fuente=transacciones');
+      const counts = new Map();
+      (trans.rows||[]).forEach(t=>{
+        const u = t.usuario || '';
+        if (u) counts.set(u, (counts.get(u)||0)+1);
+      });
+      const usuariosCount = [...counts.keys()];
+      const entriesCount  = usuariosCount.map(u => [u, counts.get(u)||0]).sort((a,b)=>b[1]-a[1]);
+
+      // 2) Minutos promedio por usuario (vista SQL)
+      const minutosRaw = await (async()=>{
+        try{
+          const j = await fetchJSON('/api/reportes/tiempo-promedio');
+          return j.data || j.rows || [];
+        }catch{
+          const j = await fetchJSON('/api/reportes/filtros?fuente=tiempo');
+          return j.rows || [];
+        }
+      })();
+      const minutos = new Map(); // minutos crudos desde la vista
+      (minutosRaw||[]).forEach(r=>{
+        const u = r.usuario || r.usuarioTxt || r.user || '';
+        const m = Number(r.minutosPromedio ?? r.minutos ?? r.minutos_promedio);
+        if (u && !isNaN(m)) minutos.set(u, m);
+      });
+      const usuarios = [...new Set([...counts.keys(), ...minutos.keys()])];
+      const entriesMin = usuarios.map(u => [u, minutos.get(u) ?? 0]).sort((a,b)=>b[1]-a[1]);
+
+      // 3) Layout con dos bloques
+      modalBody.innerHTML = `
+        <div id="wrap-count"></div>
+        <div class="mini-toolbar" style="display:flex;gap:8px;align-items:center;margin:12px 0;">
+          <span style="opacity:.8">Ver en:</span>
+          <button class="u-btn" data-unit="min">min</button>
+          <button class="u-btn active" data-unit="h">horas</button>
+        </div>
+        <div id="wrap-avg"></div>
+      `;
+
+      const wrapCount = modalBody.querySelector('#wrap-count');
+      const wrapAvg   = modalBody.querySelector('#wrap-avg');
+
+      // Render conteo
+      wrapCount.innerHTML = renderBarsCount(entriesCount);
+
+      // Render promedio (respeta unidad)
+      const rerenderAvg = () => {
+        const pairs = entriesMin.map(([u,m]) => [u, toUnit(m)]);
+        wrapAvg.innerHTML = renderBarsAvg(pairs);
+        // export del panel según unidad elegida (incluye conteo + promedio en la unidad elegida)
+        const rows = usuarios
+          .sort((a,b)=>(counts.get(b)||0)-(counts.get(a)||0))
+          .map(u => [
+            u,
+            (counts.get(u)||0),
+            (UNIT==='h' ? ((minutos.get(u)||0)/60).toFixed(1) : Math.round(minutos.get(u)||0))
+          ]);
+        showExportBar('uso', ['Usuario','Conteo', UNIT==='h' ? 'Horas promedio' : 'Minutos promedio'], rows);
+      };
+      rerenderAvg();
+
+      // 4) Toggle de unidad (sólo afecta al promedio)
+      modalBody.querySelectorAll('.u-btn').forEach(btn=>{
+        btn.onclick = () => {
+          UNIT = btn.dataset.unit;
+          modalBody.querySelectorAll('.u-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          rerenderAvg();
+        };
+      });
+    } catch (err) {
+      modalBody.innerHTML = `<div class="tip error">Error consultando uso: ${err.message}</div>`;
+    }
+  };
+
+  // Exportar (usa lo agregado y permite seleccionar/descargar todo)
+  actions.export = async () => {
+    openModal('export', 'Exportar Reporte');
+    // mapeo clave -> label de export
+    const DEF = [
+      ['accesos','Bitácora de Accesos'],
+      ['trans','Bitácora de Transacciones'],
+      ['usuarios','Usuarios del Sistema'],
+      ['ultimas','Últimas Conexiones'],
+      ['fallidos','Intentos fallidos de login'],
+      ['uso','Promedio de uso'],
+    ];
+
+    modalBody.innerHTML = `
+      <form id="formExport" class="export">
+        ${DEF.map(([k,l])=>`
+          <label class="check">
+            <input type="checkbox" value="${k}" ${selectedForExport.has(k)?'checked':''}> <span>${l}</span>
+          </label>`).join('')}
+      </form>
+      <div class="extra-actions">
+        <button id="btnPDFAll" class="btn-primary">Exportar PDF</button>
+        <button id="btnCSVAll" class="btn-outline">Exportar Excel (.csv)</button>
+      </div>`;
+
+    const esc = s => `"${String(s).replace(/"/g,'""')}"`;
+
+    async function getBlock(key){
+      switch(key){
+        case 'accesos': {
+          const d = await fetchJSON('/api/reportes/filtros?fuente=accesos');
+          const headers = ['Usuario','Fecha/Hora','Acción','Estado','Motivo'];
+          const rows = (d.rows||[]).map(a=>[a.usuario||a.usuarioTxt||'',fmtDate(a.fechaHora),a.accion||'',(a.estadoUsuario||'-'),a.motivo||'']);
+          return { title:'Bitácora de Accesos', headers, rows };
+        }
+        case 'trans': {
+          const d = await fetchJSON('/api/reportes/filtros?fuente=transacciones');
+          const headers = ['Fecha/Hora','Usuario','Entidad','Operación','Id afectado'];
+          const rows = (d.rows||[]).map(t=>[fmtDate(t.fechaHora),t.usuario,t.entidad,t.operacion,t.idAfectado??'']);
+          return { title:'Bitácora de Transacciones', headers, rows };
+        }
+        case 'usuarios': {
+          const d = await fetchJSON('/api/reportes/filtros?fuente=usuarios');
+          const headers = [
+            'ID','Usuario','Nombre','Correo','Rol','Estado',
+            'ÚLT. CAMBIO PWD','Intentos','Must reset','Creación'
+          ];
+          const rows = (d.rows||[]).map(u=>[
+            u.idUsuario,
+            u.usuario,
+            u.nombreCompleto,
+            u.correo,
+            u.rol,
+            (u.estado || ''),
+            fmtDate(u.ultimoCambioPwd),          
+            (u.intentosFallidos ?? 0),
+            (u.must_reset ? 'Sí' : 'No'),
+            fmtDate(u.fechaCreacion)
+          ]);
+          return { title:'Usuarios del Sistema', headers, rows };
+        }
+        case 'ultimas': {
+          const d = await fetchJSON('/api/reportes/filtros?fuente=accesos');
+          const okRow = r => (r.exito===true||r.exito===1||r.exito==='1'||(!r.motivo && String(r.accion||'').toLowerCase().includes('login')));
+          const map = new Map();
+          (d.rows||[]).forEach(r=>{
+            const u = r.usuario || r.usuarioTxt || '';
+            if(!u || !okRow(r)) return;
+            const f = new Date(r.fechaHora);
+            if(!map.has(u)||f>map.get(u)) map.set(u,f);
+          });
+          const headers = ['Usuario','Último acceso'];
+          const rows = [...map.entries()].sort((a,b)=>b[1]-a[1]).map(([u,dt])=>[u,dt.toLocaleString()]);
+          return { title:'Últimas Conexiones', headers, rows };
+        }
+        case 'fallidos': {
+          const d = await fetchJSON('/api/reportes/filtros?fuente=accesos');
+          const headers = ['Usuario','Fecha/Hora','IP/Dispositivo','Motivo'];
+          const rows = (d.rows||[]).filter(r=> (r.exito===false||r.exito===0||r.exito==='0'))
+              .map(x=>[x.usuario||x.usuarioTxt||'',fmtDate(x.fechaHora),x.ip||x.dispositivo||'-',x.motivo||'credenciales inválidas']);
+          return { title:'Intentos fallidos de login', headers, rows };
+        }
+        case 'uso': {
+          const d1 = await fetchJSON('/api/reportes/filtros?fuente=transacciones');
+          const counts = new Map();
+          (d1.rows||[]).forEach(t=>{ const u=t.usuario||''; if(u) counts.set(u,(counts.get(u)||0)+1); });
+
+          const d2 = await (async()=>{
+            try{ const j = await fetchJSON('/api/reportes/tiempo-promedio'); return j.data||j.rows||[]; }
+            catch{ const j = await fetchJSON('/api/reportes/filtros?fuente=tiempo'); return j.rows||[]; }
+          })();
+          const minutos = new Map();
+          (d2||[]).forEach(r=>{
+            const u = r.usuario || r.usuarioTxt || r.user || '';
+            const m = Number(r.minutosPromedio ?? r.minutos ?? r.minutos_promedio);
+            if(u && !isNaN(m)) minutos.set(u, m);
+          });
+
+          const usuarios = new Set([...counts.keys(), ...minutos.keys()]);
+          const headers = ['Usuario','Conteo','Promedio (min)','Promedio (h)'];
+          const rows = [...usuarios]
+            .sort((a,b)=>(counts.get(b)||0)-(counts.get(a)||0))
+            .map(u=>{
+              const m = minutos.get(u) ?? 0;
+              const h = (m/60).toFixed(1);
+              return [u, (counts.get(u)||0), Math.round(m), h];
+            });
+
+          return { title:'Promedio de uso', headers, rows };
+        }
+      }
+      return { title:key, headers:[], rows:[] };
+    }
+
+    $('#btnPDFAll')?.addEventListener('click', async ()=>{
+      const sel = $$('#formExport input[type=checkbox]:checked').map(i=>i.value);
+      if (!sel.length) { alert('Selecciona al menos una sección'); return; }
+      const blocks = await Promise.all(sel.map(getBlock));
+      const html = blocks.map(b=>`
+        <h2>${b.title}</h2>
+        <table style="border-collapse:collapse;width:100%">
+          <thead><tr>${b.headers.map(h=>`<th style="border:1px solid #999;padding:8px;background:#eee">${h}</th>`).join('')}</tr></thead>
+          <tbody>${b.rows.map(r=>`<tr>${r.map(c=>`<td style="border:1px solid #999;padding:8px">${c}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>`).join('<hr/>');
+      const w=window.open('','_blank');
+      w.document.write(`<html><head><title>Reporte</title><style>body{font-family:Inter,Arial;margin:18px}</style></head><body>${html}</body></html>`);
+      w.document.close(); w.focus(); w.print();
+    });
+
+    $('#btnCSVAll')?.addEventListener('click', async ()=>{
+      const sel = $$('#formExport input[type=checkbox]:checked').map(i=>i.value);
+      if (!sel.length) { alert('Selecciona al menos una sección'); return; }
+      const blocks = await Promise.all(sel.map(getBlock));
+      const csv = blocks.map(b=>[
+        b.title,
+        b.headers.join(','),
+        ...b.rows.map(r=> r.map(esc).join(','))
+      ].join('\n')).join('\n\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+      const url  = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), { href:url, download:'reporte.csv' });
+      a.click(); URL.revokeObjectURL(url);
+    });
+  };
+
+  // ---------- wire de tarjetas ----------
+  $$('.card[data-modal]').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const key = card.dataset.modal;
+      const fn  = actions[key];
+      if (typeof fn === 'function') fn();
+    });
+  });
+
+  // La tarjeta "Filtros de Búsqueda" es un <a> hacia otra página (no se intercepta).
+});

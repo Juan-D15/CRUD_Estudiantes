@@ -172,26 +172,31 @@ btnConfirm.addEventListener('click', async () => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRFToken': CSRFTOKEN()
+        'X-CSRFToken': (getCookie && getCookie('csrftoken')) || ''
       },
       body: JSON.stringify(body),
       credentials: 'same-origin',
       cache: 'no-store'
     });
+
     const j = await res.json().catch(() => ({}));
 
-    if(res.ok && (j.rc === 0 || j.ok === true)){
+    if (res.ok && (j.rc === 0 || j.ok === true)) {
+      // si el backend nos dijo a dónde ir → redirigimos
+      if (j.redirect) {
+        window.location.href = j.redirect;
+        return;
+      }
+      // por si el backend no envió redirect, pero te pusiste "bloqueado"
+      if ((body.estado || '').toLowerCase() === 'bloqueado') {
+        const fallback = (window.LOGIN_URL || '/admin/login'); // ajústalo si usas otra ruta
+        window.location.href = fallback;
+        return;
+      }
       baseline = getCurrentValues();
       showToast('Actualizado correctamente.');
     } else {
-      const msgMap = {
-        1: 'Dato requerido.',
-        2: 'Usuario duplicado.',
-        3: 'Correo duplicado.',
-        4: 'Contraseña débil.',
-        5: 'Error del servidor.',
-        6: 'No existe o no permitido.'
-      };
+      const msgMap = {1:'Dato requerido.',2:'Usuario duplicado.',3:'Correo duplicado.',5:'Error.',6:'No existe.'};
       msg.textContent = j.msg || msgMap[j.rc] || 'No se pudo actualizar.';
       setTimeout(() => msg.textContent = '', 2500);
     }
@@ -201,6 +206,7 @@ btnConfirm.addEventListener('click', async () => {
     setTimeout(() => msg.textContent = '', 2500);
   }
 });
+
 
 // Toast
 let toastTimer;

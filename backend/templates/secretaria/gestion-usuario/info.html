@@ -4,26 +4,23 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Información de la cuenta — Admin</title>
+  <title>Información de la cuenta — Secretaría</title>
 
-  <!-- Fuente opcional (mismo look) -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
-
-  <!-- CSS de esta vista -->
-  <link rel="stylesheet" href="{% static 'css/info-user-admin.css' %}">
+  <link rel="stylesheet" href="{% static 'css/info-user-secretario.css' %}">
 </head>
 <body>
   <div class="frame">
 
     <!-- Volver -->
-    <a class="back" href="{% url 'admin_rep_index' %}" aria-label="Volver">
+    <a class="back" href="{% url 'secre_usr_index' %}" aria-label="Volver">
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
         <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <span>Volver</span>
     </a>
 
-    <!-- Encabezado centrado -->
+    <!-- Encabezado -->
     <header class="top">
       <h1 class="title">Información de la cuenta</h1>
       <div class="logo" aria-hidden="true">
@@ -35,7 +32,7 @@
       </div>
     </header>
 
-    <!-- Panel con “tabla” de datos -->
+    <!-- Panel -->
     <main class="wrap">
       <section class="panel">
         <h2 class="panel-title">Datos de la cuenta</h2>
@@ -45,42 +42,45 @@
             <tbody>
               <tr>
                 <th>ID</th>
-                <td><input id="f-id" type="text"  readonly></td>
+                <td><input id="f-id" type="text" value="" readonly></td>
               </tr>
+
               <tr>
                 <th>Nombre completo</th>
-                <td><input id="f-nombre" type="text"  autocomplete="name"></td>
+                <td><input id="f-nombre" type="text" value="" autocomplete="name"></td>
               </tr>
+
               <tr>
                 <th>Usuario</th>
-                <td><input id="f-usuario" type="text"  autocomplete="username"></td>
+                <td><input id="f-usuario" type="text" value="" autocomplete="username"></td>
               </tr>
+
               <tr>
                 <th>Correo</th>
-                <td><input id="f-correo" type="email"  autocomplete="email"></td>
+                <td><input id="f-correo" type="email" value="" readonly></td>
               </tr>
+
               <tr>
                 <th>Contraseña</th>
-                <td><input id="f-pass" type="text" value="*******"  readonly aria-readonly="true" title="No editable desde aquí"></td>
+                <td><input id="f-pass" type="text" value="••••••••" readonly aria-readonly="true" title="No editable desde aquí"></td>
               </tr>
+
               <tr>
                 <th>Rol</th>
-                <td>
-                  <div class="badge">Administrador</div>
-                  <!-- rol no editable -->
-                </td>
+                <td><div class="badge">Secretario(a)</div></td>
               </tr>
+
               <tr>
                 <th>Fecha de creación</th>
-                <td><input id="f-creado" type="text"  readonly></td>
+                <td><input id="f-creado" type="text" value="" readonly></td>
               </tr>
+
               <tr>
                 <th>Estado</th>
                 <td>
-                  <select id="f-estado" class="state state-active">
-                    <option value="activo" selected>Activo</option>
-                    <option value="bloqueado">Bloqueado</option>
-                  </select>
+                  <!-- Estado solo visual, no editable -->
+                  <span id="f-estado" class="badge green">Activo</span>
+                  <!-- Si estuviera bloqueado: class="badge red">Bloqueado</span> -->
                 </td>
               </tr>
             </tbody>
@@ -96,7 +96,7 @@
     </main>
   </div>
 
-  <!-- Overlay + Modal de confirmación -->
+  <!-- Modal de confirmación -->
   <div id="overlay" class="overlay hidden" aria-hidden="true"></div>
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-inner">
@@ -113,24 +113,21 @@
           <thead>
             <tr><th>Campo</th><th>Antes</th><th>Después</th></tr>
           </thead>
-          <tbody id="diffBody">
-            <!-- filas dinámicas -->
-          </tbody>
+          <tbody id="diffBody"><!-- filas dinámicas --></tbody>
         </table>
       </div>
 
-      <p class="hint">Revisa los cambios antes de confirmar. Al mostrarse este cuadro, el fondo se opaca para facilitar la lectura.</p>
+      <p class="hint">Revisa los cambios antes de confirmar. El fondo se opaca para facilitar la lectura.</p>
     </div>
   </div>
 
   <!-- Toast -->
   <div id="toast" class="toast hidden"></div>
-  <div id="page" data-user-id="{{ id_usr|default:'0' }}"></div>
+  <div id="page" data-user-id="{{ id_usr|default:'0' }}"></div>    
     <script>
       window.CURRENT_USER_ID = Number(document.getElementById('page').dataset.userId || 0);
-      window.LOGIN_BACK_URL = "{% url 'admin_login' %}"; 
+      window.LOGIN_BACK_URL = "{% url 'secretario_login' %}"; 
     </script>
-  <!-- JS de esta vista -->
-  <script src="{% static 'js/info-user-admin.js' %}?v=3"></script>
+  <script src="{% static 'js/info-user-secretario.js' %}?v=8"></script>
 </body>
 </html>

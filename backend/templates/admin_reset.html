@@ -46,13 +46,13 @@
         <p class="subtitle">Restablecer para <b>Administrador</b></p>
 
         <form id="formReset" novalidate>
-          <input type="hidden" id="token" name="token" value="{{ request.GET.t|default:'' }}">
-          <input type="hidden" id="email" name="email" value="{{ request.GET.e|default:'' }}">
+          <input type="hidden" id="token" name="token" value="{{ token|default:'' }}">
+          <input type="hidden" id="email" name="email" value="{{ email|default:'' }}">
 
           <label class="label">Correo (no editable)</label>
           <div class="input-wrap readonly">
             <input id="emailView" type="text" readonly aria-readonly="true"
-                    value="{{ request.GET.e|default:'' }}">
+                    value="{{ email|default:'' }}">
             <span class="icon">
               <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 8l8 5 8-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
             </span>
@@ -87,6 +87,7 @@
           <div class="input-wrap">
             <input id="pwd2" type="password" placeholder="********" autocomplete="new-password" required>
 
+            
             <!-- 👁️ Ojo: mostrar/ocultar -->
             <button type="button" class="toggle-eye" aria-label="Mostrar contraseña" aria-pressed="false">
               <svg class="eye" viewBox="0 0 24 24">
@@ -117,6 +118,6 @@
   <script>
     window.LOGIN_BACK_URL = "{% url 'admin_login' %}"; 
   </script>
-  <script src="{% static 'js/reset.js' %}"></script>
+  <script src="{% static 'js/reset.js' %}?v=4"></script>
 </body>
 </html>
