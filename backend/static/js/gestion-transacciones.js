@@ -262,34 +262,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Promedio de uso: Conteo de acciones + Minutos promedio por usuario
-  // Promedio de uso: Conteo de acciones + Promedio en min/horas con selector
+  // Promedio de uso: Conteo de acciones + Promedio en min/horas con selector (sin doble conversión)
   actions.uso = async () => {
     openModal('uso', 'Promedio de uso');
 
     // --- helpers de formato/unidad (sólo para PROMEDIO)
     let UNIT = 'h'; // 'min' | 'h'
-    const toUnit   = v => UNIT === 'h' ? (v/60) : v;                 // minutos -> unidad elegida
-    const valText  = v => UNIT === 'h' ? (v/60).toFixed(1) : Math.round(v);
+    const norm     = v => UNIT === 'h' ? (v/60) : v;                    // para alturas/escala
+    const label    = v => UNIT === 'h' ? (v/60).toFixed(1) : Math.round(v); // texto sobre la barra
     const unitText = () => UNIT === 'h' ? 'h' : 'min';
 
     // ------- renderizadores -------
-    const renderBarsCount = (pairs) => {
+    const renderBarsCount = (pairs /* [usuario, conteo] */) => {
       const max   = Math.max(...pairs.map(([,v])=>v), 1);
       const barW  = 42, gap = 24, pad = 48, top = 24, H = 220, bottom = 80;
       const W     = pad*2 + pairs.length*barW + (pairs.length-1)*gap;
-      const fmt   = v => String(v); // << definir antes de usar
+      const fmt   = v => String(v); // formateador simple
 
       const rects = pairs.map(([u,val],i)=>{
         const h = Math.round((val/max)*H);
         const x = pad + i*(barW+gap), y = top + (H - h);
-        const label = (u.length>16 ? u.slice(0,15)+'…' : u);
+        const short = (u.length>16 ? u.slice(0,15)+'…' : u);
         return `
           <g>
             <rect class="bar" x="${x}" y="${y}" width="${barW}" height="${h}" rx="4"></rect>
             <text x="${x+barW/2}" y="${y-6}" text-anchor="middle" font-size="12" fill="#b574ff">${fmt(val)}</text>
             <text transform="translate(${x+barW/2},${top+H+30}) rotate(-35)"
-                  text-anchor="end" font-size="12" fill="#fff" title="${u}">${label}</text>
+                  text-anchor="end" font-size="12" fill="#fff" title="${u}">${short}</text>
           </g>`;
       }).join('');
 
@@ -302,22 +301,25 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     };
 
-
-    const renderBarsAvg = (pairs) => {
-      const max = Math.max(...pairs.map(([,v])=>v), 1);
+    const renderBarsAvg = (pairs /* [usuario, minutos] */) => {
+      // ¡OJO! 'pairs' trae MINUTOS; convertimos aquí con norm()/label()
+      const max = Math.max(...pairs.map(([,v])=>norm(v)), 1);
       const barW=42, gap=24, pad=48, top=24, H=220, bottom=80;
       const W = pad*2 + pairs.length*barW + (pairs.length-1)*gap;
-      const rects = pairs.map(([u,val],i)=>{
-        const h = Math.round((val/max)*H);
+
+      const rects = pairs.map(([u,minutos],i)=>{
+        const h = Math.round((norm(minutos)/max)*H);
         const x = pad + i*(barW+gap), y = top + (H - h);
-        const label = (u.length>16 ? u.slice(0,15)+'…' : u);
+        const short = (u.length>16 ? u.slice(0,15)+'…' : u);
         return `
           <g>
             <rect class="bar" x="${x}" y="${y}" width="${barW}" height="${h}" rx="4"></rect>
-            <text x="${x+barW/2}" y="${y-6}" text-anchor="middle" font-size="12" fill="#b574ff">${valText(val)}</text>
-            <text transform="translate(${x+barW/2},${top+H+30}) rotate(-35)" text-anchor="end" font-size="12" fill="#fff" title="${u}">${label}</text>
+            <text x="${x+barW/2}" y="${y-6}" text-anchor="middle" font-size="12" fill="#b574ff">${label(minutos)}</text>
+            <text transform="translate(${x+barW/2},${top+H+30}) rotate(-35)"
+                  text-anchor="end" font-size="12" fill="#fff" title="${u}">${short}</text>
           </g>`;
       }).join('');
+
       return `
         <div class="chart">
           <h4>Uso promedio por usuario (${unitText()})</h4>
@@ -348,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return j.rows || [];
         }
       })();
-      const minutos = new Map(); // minutos crudos desde la vista
+      const minutos = new Map(); // MINUTOS crudos desde la vista
       (minutosRaw||[]).forEach(r=>{
         const u = r.usuario || r.usuarioTxt || r.user || '';
         const m = Number(r.minutosPromedio ?? r.minutos ?? r.minutos_promedio);
@@ -374,11 +376,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Render conteo
       wrapCount.innerHTML = renderBarsCount(entriesCount);
 
-      // Render promedio (respeta unidad)
+      // Render promedio (respeta unidad) — NO conviertas antes de pasar los datos
       const rerenderAvg = () => {
-        const pairs = entriesMin.map(([u,m]) => [u, toUnit(m)]);
-        wrapAvg.innerHTML = renderBarsAvg(pairs);
-        // export del panel según unidad elegida (incluye conteo + promedio en la unidad elegida)
+        wrapAvg.innerHTML = renderBarsAvg(entriesMin); // entriesMin = [usuario, MINUTOS]
+        // Export del panel según unidad elegida (incluye conteo + promedio en la unidad elegida)
         const rows = usuarios
           .sort((a,b)=>(counts.get(b)||0)-(counts.get(a)||0))
           .map(u => [
@@ -403,6 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
       modalBody.innerHTML = `<div class="tip error">Error consultando uso: ${err.message}</div>`;
     }
   };
+
 
   // Exportar (usa lo agregado y permite seleccionar/descargar todo)
   actions.export = async () => {
