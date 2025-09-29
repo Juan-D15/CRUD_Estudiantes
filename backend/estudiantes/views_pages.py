@@ -56,6 +56,7 @@ def secretario_reset_page(r):
     
 # ===================== Secretaria =====================
 @require_role("secretaria")
+@ensure_csrf_cookie
 def secre_home_page(request):
     idu = request.session.get("id_usuario_db")
     info = get_usuario_info(idu)
@@ -63,6 +64,7 @@ def secre_home_page(request):
 
 # ---- Estudiantes (secretaria) ----
 @require_role("secretaria")
+@ensure_csrf_cookie
 def secre_est_index(request):        # menú/landing del módulo estudiantes
     return render(request, "secretaria/estudiantes/index.html")
 
@@ -83,6 +85,7 @@ def secre_est_actualizar(request, id_est=None):
 
 # ---- Gestión-Usuario (secretaria) ----
 @require_role("secretaria")
+@ensure_csrf_cookie
 def secre_usr_index(request):
     return render(request, "secretaria/gestion-usuario/index.html")
 
@@ -96,6 +99,7 @@ def secre_usr_info(request, id_usr=None):
 
 # ===================== ADMIN =====================
 @require_role("admin")
+@ensure_csrf_cookie
 def admin_home_page(request):
     idu = request.session.get("id_usuario_db")
     info = get_usuario_info(idu)
@@ -103,6 +107,7 @@ def admin_home_page(request):
 
 # ---- Estudiantes (admin) ----
 @require_role("admin")
+@ensure_csrf_cookie
 def admin_est_index(request):        # menú/landing del módulo estudiantes
     return render(request, "admin/estudiantes/index.html")
 
@@ -128,6 +133,7 @@ def admin_est_eliminar(request, id_est=None):
 
 # ---- Usuarios (admin) ----
 @require_role("admin")
+@ensure_csrf_cookie
 def admin_usr_index(request):
     return render(request, "admin/usuarios/index.html")
 
@@ -160,13 +166,16 @@ def admin_usr_info(request, id_usr=None):
 
 # ---- Reportes (admin) ----
 @require_role("admin")
+@ensure_csrf_cookie
 def admin_rep_index(request):        # menú/landing del módulo estudiantes
     return render(request, "admin/tramites/index.html")
 
 @require_role("admin")
+@ensure_csrf_cookie
 def admin_rep_reportes(request):        
     return render(request, "admin/tramites/reportes.html")
 
 @require_role("admin")
+@ensure_csrf_cookie
 def admin_rep_filtros(request):        
     return render(request, "admin/tramites/filtros_busqueda.html")
