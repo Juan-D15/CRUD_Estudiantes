@@ -16,7 +16,7 @@ urlpatterns = [
     path("login/select", pages.login_select, name="login_select"),
     path("login/admin/", api.login_admin, name="admin_login"),
     path("login/secretario/", api.login_secretario, name="secretario_login"),
-    path("logout/", api.logout_view, name="logout"),
+    path("logout/", api.logout_view, name="logout_view"),
     
     # Flujo Reset
     path("auth/reset/send-code", api.reset_send_code, name="reset_send_code"),
@@ -49,7 +49,8 @@ urlpatterns = [
 
     # Reportes (admin)
     path("admin/reportes", pages.admin_rep_index, name="admin_rep_index"),
-    path("admin/reportes/reportes", pages.admin_rep_reportes, name="admin_rep_reportes"),
+    path("admin/reportes/gestion", pages.admin_rep_reportes, name="admin_rep_reportes"),
+    path("admin/reportes/filtros", pages.admin_rep_filtros, name="admin_rep_filtros"),
     
     # Vistas Secretaría
     path("secretaria/home", pages.secre_home_page, name="secretaria_home"),
@@ -87,6 +88,7 @@ urlpatterns = [
     # Reportes (admin)
     path("api/reportes/filtros", api.api_reportes_filtros, name="api_reportes_filtros"),
     path("api/reportes/acciones-transacciones", api.api_reportes_acciones_transacciones, name="api_reportes_acciones_transacciones"),
+    path('api/filtros/busqueda', api.api_filtros_busqueda, name="api_filtros_busqueda"),
 
     # JSON
     path("api/reportes/ultima-conexion",  api.api_rep_ultima_conexion, name="api_rep_ultima_conexion"),
