@@ -63,7 +63,6 @@
       <!-- Tarjetas -->
       <div class="cards" id="cards">
         <!-- Gestión Estudiantes -->
-        <!-- COPIAR AQUI LA RUTA DEL INDEX PRINCIPAL DEL PROYECTO ANTERIOR -->
         <a class="card" href="{% url 'admin_est_index' %}">
           <h3>Gestión<br>Estudiantes</h3>
           <svg viewBox="0 0 64 64" class="icon-draw" aria-hidden="true">
@@ -147,7 +146,8 @@
     window.ADMIN_LOGIN_URL = "{% url 'admin_login' %}";
     window.ADMIN_RESET_URL = "{% url 'admin_reset_page' %}";
     window.ADMIN_INFO_URL = "{% url 'admin_usr_info' %}";
+    window.ADMIN_LOGOUT_URL = "{% url 'logout_view' %}"; 
   </script>
-  <script src="{% static 'js/home-admin.js' %}?v=2"></script>
+  <script src="{% static 'js/home-admin.js' %}?v=3"></script>
 </body>
 </html>
