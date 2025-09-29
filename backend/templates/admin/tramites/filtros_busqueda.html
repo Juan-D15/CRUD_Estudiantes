@@ -1,0 +1,161 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Filtro Completo de Búsqueda</title>
+
+  <!-- Fuente (mismo look & feel) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+  <!-- Estilos de esta vista -->
+  <link rel="stylesheet" href="{% static 'css/filtros-busqueda.css' %}">
+</head>
+<body>
+  <div class="frame">
+    <!-- Volver -->
+    <a class="back" href="{% url 'admin_rep_reportes' %}" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+
+    <header class="top">
+      <h1 class="title">
+        Filtro Completo de Búsqueda
+      </h1>
+      <div class="logo" aria-hidden="true">
+        <!-- sliders -->
+        <svg viewBox="0 0 64 64" width="70" height="70">
+          <path d="M10 18h44M28 18v-6M28 18v6" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <path d="M10 32h44M36 32v-6M36 32v6" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <path d="M10 46h44M22 46v-6M22 46v6" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </header>
+
+    <!-- Controles -->
+    <section class="controls" aria-label="Controles de búsqueda">
+      <!-- Usuario -->
+      <label class="ctl input">
+        <span class="sr-only">Usuario</span>
+        <input id="fUsuario" type="text" placeholder="Buscar usuario"/>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M16.5 16.5L21 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </label>
+
+      <!-- Acciones -->
+      <label class="ctl select">
+        <span class="sr-only">Acciones</span>
+        <select id="fAccion">
+          <option value="">Acciones</option>
+          <option value="login">Logins</option>
+          <option value="user_reg">Registro de usuario</option>
+          <option value="user_edit">Edición de usuario</option>
+          <option value="user_del">Eliminación de usuario</option>
+          <option value="stu_reg">Registro de estudiante</option>
+          <option value="stu_edit">Edición de estudiante</option>
+          <option value="stu_del">Eliminación de estudiante</option>
+          <option value="pwd_change">Cambio de contraseña</option>
+          <option value="self_edit">Edición de su propia cuenta</option>
+          <option value="report">Generación de reportes</option>
+          <option value="last_login">Última conexión</option>
+        </select>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </label>
+
+      <!-- Fecha -->
+      <label class="ctl select">
+        <span class="sr-only">Filtro por fecha</span>
+        <select id="fFechaTipo">
+          <option value="">Filtrar por fecha</option>
+          <option value="rango">Rango de fechas</option>
+          <option value="recientes">Más recientes</option>
+          <option value="antiguos">Más antiguos</option>
+        </select>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </label>
+
+      <!-- Rango de fechas (condicional) -->
+      <div id="rangoFechas" class="ctl dates hidden">
+        <label>
+          <span>Desde</span>
+          <input id="fDesde" type="date">
+        </label>
+        <label>
+          <span>Hasta</span>
+          <input id="fHasta" type="date">
+        </label>
+      </div>
+
+
+
+      <!-- Estados -->
+      <fieldset class="ctl estados">
+        <legend class="sr-only">Estados</legend>
+        <label class="chk">
+          <input id="chkActivo" type="checkbox" checked>
+          <span class="dot dot-green"></span> Activo
+        </label>
+        <label class="chk">
+          <input id="chkBloqueado" type="checkbox">
+          <span class="dot dot-red"></span> Bloqueado
+        </label>
+      </fieldset>
+
+      <!-- Botones -->
+      <div class="ctl actions">
+        <button id="btnBuscar" class="btn-primary">Buscar</button>
+        <button id="btnLimpiar" class="btn-outline">Limpiar</button>
+        <button id="btnExportar" class="btn-outline ghost">Exportar búsqueda (PDF)</button>
+      </div>
+    </section>
+
+    <!-- Resultados -->
+    <main class="results-wrap">
+      <h2 class="results-title">Resultados</h2>
+      <div id="resultados" class="results" aria-live="polite" aria-busy="false">
+        <!-- filas inyectadas por JS -->
+      </div>
+      <p id="msg" class="msg" role="status" aria-live="polite"></p>
+    </main>
+  </div>
+
+  <!-- Modal detalle -->
+  <div id="overlay" class="overlay hidden" aria-hidden="true"></div>
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-inner">
+      <h3 id="modal-title">Usuario</h3>
+
+      <div class="preview">
+        <div class="row">
+          <span class="k">ID</span><span class="v" id="m-id"></span>
+          <span class="k">Usuario</span><span class="v" id="m-usuario"></span>
+          <span class="k">Nombre</span><span class="v" id="m-nombre"></span>
+          <span class="k">Correo</span><span class="v" id="m-correo"></span>
+          <span class="k">Rol</span><span class="v" id="m-rol"></span>
+          <span class="k">Estado</span><span class="v" id="m-estado"></span>
+          <span class="k">Acción</span><span class="v" id="m-accion"></span>
+          <span class="k">Fecha</span><span class="v" id="m-fecha"></span>
+          <span class="k">Detalle</span><span class="v" id="m-detalle"></span>
+        </div>
+      </div>
+
+      <div class="modal-actions single">
+        <button id="btnCerrar" class="btn-outline">Volver</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{% static 'js/filtros-busqueda.js' %}?v=2"></script>
+</body>
+</html>
