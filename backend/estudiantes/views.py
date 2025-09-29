@@ -1,9 +1,10 @@
 from django.http import JsonResponse, HttpResponse, HttpResponseNotAllowed
 from django.views.decorators.http import require_http_methods, require_POST
-from django.views.decorators.csrf import csrf_exempt  
+from django.views.decorators.csrf import csrf_exempt 
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.core.mail import send_mail
+from django.db import connection
 from django.conf import settings
 from django.urls import reverse
 from .security import verify_recaptcha  
@@ -519,6 +520,105 @@ def api_rep_datos_personales(request):
     data = rep_datos_personales(rol=qs.get("rol"), estado=qs.get("estado"))
     return JsonResponse({"ok": True, "data": data})
 
+@require_role('admin')
+@require_http_methods(["GET"])
+def api_filtros_busqueda(request):
+    """
+    GET /api/filtros/busqueda
+    Query:
+      usuario: substring (case-insensitive)
+      accion:  '', 'login','user_reg','stu_reg', ... o 'last_login'
+      fechaTipo: '', 'rango','recientes','antiguos'
+      desde, hasta: 'YYYY-MM-DD'
+      estado: puede venir varias veces ('activo','bloqueado')
+      limit: int (default 500)
+    """
+    q_usuario  = (request.GET.get('usuario') or '').strip().lower()
+    accion     = (request.GET.get('accion')  or '').strip()
+    fechaTipo  = (request.GET.get('fechaTipo') or '').strip()
+    desde      = (request.GET.get('desde') or '').strip()
+    hasta      = (request.GET.get('hasta') or '').strip()
+    estados    = request.GET.getlist('estado') or []
+    try:
+        limit = int(request.GET.get('limit') or 500)
+    except:
+        limit = 500
+
+    rows = []
+
+    dir_sql = "ASC" if fechaTipo == 'antiguos' else "DESC"
+
+    with connection.cursor() as cur:
+        if accion == 'last_login':
+            # Vista de última conexión
+            sql = """
+                SELECT
+                    u.idUsuario, u.usuario, u.nombreCompleto, u.correo, u.rol, u.estado,
+                    'last_login' AS accion,
+                    CAST(1 AS bit) AS exito,
+                    v.ultimaConexion AS fechaHora,
+                    CAST(NULL AS nvarchar(max)) AS detalle
+                FROM dbo.vwUltimaConexion v
+                JOIN dbo.tbUsuario u ON u.idUsuario = v.idUsuario
+                WHERE v.ultimaConexion IS NOT NULL
+            """
+            params = []
+
+            if q_usuario:
+                sql += " AND LOWER(u.usuario) LIKE %s"
+                params.append(f"%{q_usuario}%")
+
+            if estados:
+                placeholders = ",".join(["%s"] * len(estados))
+                sql += f" AND u.estado IN ({placeholders})"
+                params.extend(estados)
+
+            if fechaTipo == 'rango' and desde and hasta:
+                sql += " AND v.ultimaConexion BETWEEN %s AND DATEADD(SECOND, 86399, %s)"
+                params.extend([desde, hasta])
+
+            sql += f" ORDER BY v.ultimaConexion {dir_sql}, u.idUsuario {dir_sql} OFFSET 0 ROWS FETCH NEXT %s ROWS ONLY"
+            params.append(limit)
+
+            cur.execute(sql, params)
+            cols = [c[0] for c in cur.description]
+            rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+        else:
+            # Vista unificada de eventos
+            sql = """
+                SELECT
+                    idUsuario, usuario, nombreCompleto, correo, rol, estado,
+                    accion, exito, fechaHora, detalle
+                FROM dbo.vwEventosAuditoria
+                WHERE 1=1
+            """
+            params = []
+
+            if q_usuario:
+                sql += " AND LOWER(usuario) LIKE %s"
+                params.append(f"%{q_usuario}%")
+
+            if accion:
+                sql += " AND accion = %s"
+                params.append(accion)
+
+            if estados:
+                placeholders = ",".join(["%s"] * len(estados))
+                sql += f" AND estado IN ({placeholders})"
+                params.extend(estados)
+
+            if fechaTipo == 'rango' and desde and hasta:
+                sql += " AND fechaHora BETWEEN %s AND DATEADD(SECOND, 86399, %s)"
+                params.extend([desde, hasta])
+
+            sql += f" ORDER BY fechaHora {dir_sql} OFFSET 0 ROWS FETCH NEXT %s ROWS ONLY"
+            params.append(limit)
+
+            cur.execute(sql, params)
+            cols = [c[0] for c in cur.description]
+            rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+    return JsonResponse({"rows": rows})
 # ===================== EXPORTS =====================
 @require_role("admin")
 @require_http_methods(["GET"])

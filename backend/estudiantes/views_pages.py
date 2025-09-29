@@ -166,3 +166,7 @@ def admin_rep_index(request):        # menú/landing del módulo estudiantes
 @require_role("admin")
 def admin_rep_reportes(request):        
     return render(request, "admin/tramites/reportes.html")
+
+@require_role("admin")
+def admin_rep_filtros(request):        
+    return render(request, "admin/tramites/filtros_busqueda.html")
