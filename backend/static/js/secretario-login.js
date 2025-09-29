@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ---- Enviar código ----
   const btnSend = $('#btnSendCode');
   btnSend?.addEventListener('click', async ()=>{
-    const email = (recEmail?.value || '').trim();
+    const email = (recEmail?.value || '').trim().toLowerCase();
     if(!emailRe.test(email)){ setSendMsg('Correo inválido.','err'); recEmail?.focus(); return; }
 
     btnSend.disabled = true; setSendMsg('Enviando código…');
@@ -99,19 +99,26 @@ document.addEventListener('DOMContentLoaded', () => {
         body:new URLSearchParams({ email, rol: role })
       });
       let j={}; try{ j = await r.json(); }catch{}
-      console.log('send-code status:', r.status, j);
-      if(r.ok && j && j.ok!==false){
-        setSendMsg(j.msg || 'Si el correo existe, te llegará un código.','ok');
-      }else{
-        setSendMsg((j&&j.msg)||'No se pudo enviar el código.','err');
+
+      // Mapea el "correo no encontrado" del backend
+      if (r.status === 404 || j.rc === 6 || j.error === 'not_found') {
+        setSendMsg('Correo no registrado.','err');
+        return; // <- NO mostramos “si el correo existe…”
       }
-    }catch(err){
+
+      if (r.ok && j && j.ok !== false) {
+        setSendMsg(j.msg || 'Código enviado a tu correo.','ok');
+      } else {
+        setSendMsg((j && j.msg) || 'No se pudo enviar el código.','err');
+      }
+    } catch (err) {
       console.error('send-code error:', err);
       setSendMsg('Error de red al enviar el código.','err');
-    }finally{
+    } finally {
       btnSend.disabled = false;
     }
   });
+
 
   // ---- Verificar código ----
   const btnRecover = $('#btnRecuperar');
