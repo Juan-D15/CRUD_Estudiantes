@@ -26,15 +26,39 @@ function openConfirm({title, confirmText='Confirmar', cancelText='Cancelar', onC
   modal.querySelector('#mConfirm').addEventListener('click', ()=>{ close(); onConfirm && onConfirm(); });
 }
 
-// Volver / cerrar sesión
+// helpers CSRF + logout
+function getCsrfToken() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+async function doLogout(logoutUrl, redirectTo) {
+  try {
+    // intenta POST con CSRF; si tu vista acepta GET, también funcionará más abajo
+    const r = await fetch(logoutUrl || '/logout', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrfToken() }
+    });
+    if (!r.ok) {
+      // fallback por si tu logout es GET
+      await fetch(logoutUrl || '/logout', { method: 'GET', credentials: 'include' });
+    }
+  } catch (e) {
+    // silencioso; de todas formas redirigimos
+  } finally {
+    window.location.href = redirectTo || (window.ADMIN_LOGIN_URL || '../admin-login.html');
+  }
+}
+
+// Botón “Volver / Cerrar sesión”
 document.getElementById('btnBack').addEventListener('click', ()=>{
   openConfirm({
     title: '¿Estás seguro que quieres cerrar sesión y salir?',
     confirmText: 'Cerrar sesión',
     cancelText: 'Cancelar',
-    onConfirm: () => { window.location.href = window.ADMIN_LOGIN_URL || '../admin-login.html'; }
+    onConfirm: () => doLogout(window.ADMIN_LOGOUT_URL, window.ADMIN_LOGIN_URL)
   });
 });
+
 
 // Menú de usuario
 const btnUser   = document.getElementById('btnUser');
@@ -59,9 +83,10 @@ uLogout.addEventListener('click', ()=>{
     title:'¿Estás seguro que quieres cerrar sesión y salir?',
     confirmText:'Cerrar sesión',
     cancelText:'Cancelar',
-    onConfirm:()=>{ window.location.href = window.ADMIN_LOGIN_URL || '../admin-login.html'; }
+    onConfirm:()=> doLogout(window.ADMIN_LOGOUT_URL, window.ADMIN_LOGIN_URL)
   });
 });
+
 uChange.addEventListener('click', ()=>{
   userMenu.classList.remove('open');
   openConfirm({

@@ -25,6 +25,39 @@ function openConfirm({title, confirmText='Confirmar', cancelText='Cancelar', onC
   modal.querySelector('#mCancel').addEventListener('click', close);
   modal.querySelector('#mConfirm').addEventListener('click', ()=>{ close(); onConfirm && onConfirm(); });
 }
+function getCsrfToken() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+async function doLogout(logoutUrl, redirectTo) {
+  try {
+    const r = await fetch(logoutUrl || '/logout', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrfToken() }
+    });
+    if (!r.ok) {
+      await fetch(logoutUrl || '/logout', { method: 'GET', credentials: 'include' });
+    }
+  } catch(e) {}
+  finally { window.location.href = redirectTo || (window.SECRE_LOGIN_URL || '../secretario_login.html'); }
+}
+
+function getCsrfToken() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+async function doLogout(logoutUrl, redirectTo) {
+  try {
+    const r = await fetch(logoutUrl || '/logout', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrfToken() }
+    });
+    if (!r.ok) {
+      await fetch(logoutUrl || '/logout', { method: 'GET', credentials: 'include' });
+    }
+  } catch(e) {}
+  finally { window.location.href = redirectTo || (window.SECRE_LOGIN_URL || '../secretario_login.html'); }
+}
 
 // ---------- back: confirmar cierre de sesión ----------
 document.getElementById('btnBack').addEventListener('click', ()=>{
@@ -32,7 +65,7 @@ document.getElementById('btnBack').addEventListener('click', ()=>{
     title: '¿Estás seguro que quieres cerrar sesión y salir?',
     confirmText: 'Cerrar sesión',
     cancelText: 'Cancelar',
-    onConfirm: () => { window.location.href = window.SECRE_LOGIN_URL || '../secretario_login.html'; }
+    onConfirm: () => doLogout(window.SECRE_LOGOUT_URL, window.SECRE_LOGIN_URL)
   });
 });
 
@@ -46,15 +79,17 @@ const uLogout  = document.getElementById('uLogout');
 btnUser.addEventListener('click', (e)=>{ e.stopPropagation(); userMenu.classList.toggle('open'); });
 document.addEventListener('click', (e)=>{ if(!userMenu.contains(e.target) && e.target!==btnUser){ userMenu.classList.remove('open'); } });
 
+
 uLogout.addEventListener('click', ()=>{
   userMenu.classList.remove('open');
   openConfirm({
     title:'¿Estás seguro que quieres cerrar sesión y salir?',
     confirmText:'Cerrar sesión',
     cancelText:'Cancelar',
-    onConfirm:()=>{ window.location.href = window.SECRE_LOGIN_URL || '../secretario_login.html'; }
+    onConfirm:()=> doLogout(window.SECRE_LOGOUT_URL, window.SECRE_LOGIN_URL)
   });
 });
+
 uChange.addEventListener('click', ()=>{
   userMenu.classList.remove('open');
   openConfirm({
