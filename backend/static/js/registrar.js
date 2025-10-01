@@ -33,10 +33,11 @@
     const a = (inpA.value || "").trim();
     const c = (inpC.value || "").trim();
     const t = (inpT.value || "").trim();
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (n === "") { errN.textContent = "Nombre vacío (error 1)"; ok = false; }
     if (a === "") { errA.textContent = "Apellido vacío (error 2)"; ok = false; }
-    if (!c.includes("@")) { errC.textContent = 'Correo sin "@" (error 3)'; ok = false; }
+    if (!emailRe.test(c)) { errC.textContent = "Correo inválido"; ok = false; }
     if (!/^\d{8}$/.test(t)) { errT.textContent = "Teléfono inválido (8 dígitos) (error 4)"; ok = false; }
 
     return ok;
