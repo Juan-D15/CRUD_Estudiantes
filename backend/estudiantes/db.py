@@ -1223,15 +1223,22 @@ def obtener_venta_detalle(id_venta: int):
 # -----------------------
 # REPORTES
 # -----------------------
-def sp_reporte_ventas_por_fecha(desde, hasta, id_usuario=None, id_categoria=None):
+def sp_reporte_ventas_por_fecha(desde, hasta, id_usuario_filtro=None, id_categoria=None, id_usuario_accion=None, exportar=None):
     """Reporte de ventas por fecha
     
+    Args:
+        desde: Fecha inicial del reporte
+        hasta: Fecha final del reporte
+        id_usuario_filtro: Filtrar ventas por usuario (opcional)
+        id_categoria: Filtrar por categoría (opcional)
+        id_usuario_accion: Usuario que solicita el reporte (para bitácora)
+        exportar: Tipo de exportación ("pdf" o "excel"), None si solo visualización
+    
     Retorna: fecha, total
-    NO usa el SP para evitar error de bitácora con idUsuario NULL
     """
     try:
+        # 1. Obtener datos del reporte
         with connection.cursor() as cur:
-            # Consulta directa sin usar el SP (para evitar error de bitácora)
             sql = """
             SELECT 
                 CAST(v.fecha AS DATE) AS fecha,
@@ -1251,28 +1258,56 @@ def sp_reporte_ventas_por_fecha(desde, hasta, id_usuario=None, id_categoria=None
             GROUP BY CAST(v.fecha AS DATE)
             ORDER BY fecha DESC
             """
-            cur.execute(sql, [desde, hasta, id_usuario, id_usuario, id_categoria, id_categoria])
+            cur.execute(sql, [desde, hasta, id_usuario_filtro, id_usuario_filtro, id_categoria, id_categoria])
             rows = cur.fetchall()
-            if not rows:
-                return []
-            
-            # Normalizar columnas
-            cols = [c[0].lower() for c in cur.description]
-            return [dict(zip(cols, r)) for r in rows]
+            cols = [c[0].lower() for c in cur.description] if rows else []
+        
+        # 2. Registrar en bitácora SOLO si se está exportando
+        if id_usuario_accion and exportar:
+            import json
+            datos = json.dumps({
+                'reporte': 'ventas_por_fecha',
+                'formato_exportacion': exportar,  # "pdf" o "excel"
+                'desde': str(desde),
+                'hasta': str(hasta),
+                'id_usuario_filtro': id_usuario_filtro,
+                'id_categoria': id_categoria,
+                'registros': len(rows)
+            })
+            with connection.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO dbo.tbBitacoraTransacciones 
+                    (idUsuario, entidad, operacion, datosNuevo)
+                    VALUES (%s, 'Reportes', 'EXPORTAR_VENTAS_FECHA', %s)
+                """, [id_usuario_accion, datos])
+            connection.commit()
+            print(f"✅ Exportación registrada en bitácora: EXPORTAR_VENTAS_FECHA ({exportar.upper()}), usuario={id_usuario_accion}")
+        
+        if not rows:
+            return []
+        
+        return [dict(zip(cols, r)) for r in rows]
     except Exception as e:
-        print(f"Error en sp_reporte_ventas_por_fecha: {e}")
+        print(f"❌ Error en sp_reporte_ventas_por_fecha: {e}")
+        import traceback
+        traceback.print_exc()
+        connection.rollback()
         return []
 
 
-def sp_reporte_inventario_actual(solo_criticos: bool = False):
+def sp_reporte_inventario_actual(solo_criticos: bool = False, id_usuario_accion=None, exportar=None):
     """Reporte de inventario actual
     
+    Args:
+        solo_criticos: Si True, solo retorna productos con stock crítico
+        id_usuario_accion: Usuario que solicita el reporte (para bitácora)
+        exportar: Tipo de exportación ("pdf" o "excel"), None si solo visualización
+    
     Retorna: idProducto, nombre, stockActual, stockMinimo, entradas30, salidas30
-    NO usa el SP para evitar error de bitácora con idUsuario NULL
     """
     try:
+        # 1. Obtener datos del reporte
         with connection.cursor() as cur:
-            # Consulta directa sin usar el SP (para evitar error de bitácora)
             sql = """
             SELECT 
                 p.idProducto,
@@ -1300,44 +1335,70 @@ def sp_reporte_inventario_actual(solo_criticos: bool = False):
             """
             cur.execute(sql, [1 if solo_criticos else 0])
             rows = cur.fetchall()
-            if not rows:
-                return []
-            
-            # Obtener columnas
-            cols_orig = [c[0] for c in cur.description]
-            
-            # Mapear a los nombres que espera el frontend
-            result = []
-            for row in rows:
-                data_dict = dict(zip(cols_orig, row))
-                normalized = {
-                    'idProducto': data_dict.get('idProducto'),
-                    'nombre': data_dict.get('nombre'),
-                    'stockActual': data_dict.get('stockActual'),
-                    'stockMinimo': data_dict.get('stockMinimo'),
-                    'entradas30': data_dict.get('EntradasUlt30', 0),
-                    'salidas30': data_dict.get('SalidasUlt30', 0),
-                    'codigo': data_dict.get('codigo'),
-                    'estado': data_dict.get('estado'),
-                    'critico': data_dict.get('Critico', 0)
-                }
-                result.append(normalized)
-            
-            return result
+            cols_orig = [c[0] for c in cur.description] if rows else []
+        
+        # 2. Registrar en bitácora SOLO si se está exportando
+        if id_usuario_accion and exportar:
+            import json
+            datos = json.dumps({
+                'reporte': 'inventario_actual',
+                'formato_exportacion': exportar,  # "pdf" o "excel"
+                'solo_criticos': solo_criticos,
+                'registros': len(rows)
+            })
+            with connection.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO dbo.tbBitacoraTransacciones 
+                    (idUsuario, entidad, operacion, datosNuevo)
+                    VALUES (%s, 'Reportes', 'EXPORTAR_INVENTARIO', %s)
+                """, [id_usuario_accion, datos])
+            connection.commit()
+            print(f"✅ Exportación registrada en bitácora: EXPORTAR_INVENTARIO ({exportar.upper()}), usuario={id_usuario_accion}")
+        
+        if not rows:
+            return []
+        
+        # Mapear a los nombres que espera el frontend
+        result = []
+        for row in rows:
+            data_dict = dict(zip(cols_orig, row))
+            normalized = {
+                'idProducto': data_dict.get('idProducto'),
+                'nombre': data_dict.get('nombre'),
+                'stockActual': data_dict.get('stockActual'),
+                'stockMinimo': data_dict.get('stockMinimo'),
+                'entradas30': data_dict.get('EntradasUlt30', 0),
+                'salidas30': data_dict.get('SalidasUlt30', 0),
+                'codigo': data_dict.get('codigo'),
+                'estado': data_dict.get('estado'),
+                'critico': data_dict.get('Critico', 0)
+            }
+            result.append(normalized)
+        
+        return result
     except Exception as e:
-        print(f"Error en sp_reporte_inventario_actual: {e}")
+        print(f"❌ Error en sp_reporte_inventario_actual: {e}")
+        import traceback
+        traceback.print_exc()
+        connection.rollback()
         return []
 
 
-def sp_reporte_productos_mas_vendidos(top_n: int = 10, desde=None, hasta=None):
+def sp_reporte_productos_mas_vendidos(top_n: int = 10, desde=None, hasta=None, id_usuario_accion=None, exportar=None):
     """Reporte de productos más vendidos
     
+    Args:
+        top_n: Número de productos a retornar (por defecto 10)
+        desde: Fecha inicial del reporte (opcional)
+        hasta: Fecha final del reporte (opcional)
+        id_usuario_accion: Usuario que solicita el reporte (para bitácora)
+        exportar: Tipo de exportación ("pdf" o "excel"), None si solo visualización
+    
     Retorna: nombre, codigo, cantidad, ingresos
-    NO usa el SP para evitar error de bitácora con idUsuario NULL
     """
     try:
+        # 1. Obtener datos del reporte
         with connection.cursor() as cur:
-            # Consulta directa sin usar el SP (para evitar error de bitácora)
             sql = """
             SELECT TOP(%s)
                 p.idProducto,
@@ -1355,45 +1416,73 @@ def sp_reporte_productos_mas_vendidos(top_n: int = 10, desde=None, hasta=None):
             """
             cur.execute(sql, [top_n, desde, desde, hasta, hasta])
             rows = cur.fetchall()
-            if not rows:
-                return []
-            
-            # Obtener columnas originales
-            cols_orig = [c[0] for c in cur.description]
-            
-            # Mapear a los nombres que espera el frontend
-            result = []
-            for row in rows:
-                data_dict = dict(zip(cols_orig, row))
-                normalized = {
-                    'idProducto': data_dict.get('idProducto'),
-                    'nombre': data_dict.get('nombre'),
-                    'codigo': data_dict.get('codigo'),
-                    'cantidad': data_dict.get('Cantidad', 0),
-                    'ingresos': float(data_dict.get('Ingreso', 0))
-                }
-                result.append(normalized)
-            
-            return result
+            cols_orig = [c[0] for c in cur.description] if rows else []
+        
+        # 2. Registrar en bitácora SOLO si se está exportando
+        if id_usuario_accion and exportar:
+            import json
+            datos = json.dumps({
+                'reporte': 'productos_mas_vendidos',
+                'formato_exportacion': exportar,  # "pdf" o "excel"
+                'top_n': top_n,
+                'desde': str(desde) if desde else None,
+                'hasta': str(hasta) if hasta else None,
+                'registros': len(rows)
+            })
+            with connection.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO dbo.tbBitacoraTransacciones 
+                    (idUsuario, entidad, operacion, datosNuevo)
+                    VALUES (%s, 'Reportes', 'EXPORTAR_MAS_VENDIDOS', %s)
+                """, [id_usuario_accion, datos])
+            connection.commit()
+            print(f"✅ Exportación registrada en bitácora: EXPORTAR_MAS_VENDIDOS ({exportar.upper()}), usuario={id_usuario_accion}")
+        
+        if not rows:
+            return []
+        
+        # Mapear a los nombres que espera el frontend
+        result = []
+        for row in rows:
+            data_dict = dict(zip(cols_orig, row))
+            normalized = {
+                'idProducto': data_dict.get('idProducto'),
+                'nombre': data_dict.get('nombre'),
+                'codigo': data_dict.get('codigo'),
+                'cantidad': data_dict.get('Cantidad', 0),
+                'ingresos': float(data_dict.get('Ingreso', 0))
+            }
+            result.append(normalized)
+        
+        return result
     except Exception as e:
-        print(f"Error en sp_reporte_productos_mas_vendidos: {e}")
+        print(f"❌ Error en sp_reporte_productos_mas_vendidos: {e}")
+        import traceback
+        traceback.print_exc()
+        connection.rollback()
         return []
 
 
-def sp_reporte_ingresos_totales(modo: str = 'mensual', anio: int = None):
+def sp_reporte_ingresos_totales(modo: str = 'mensual', anio: int = None, id_usuario_accion=None, exportar=None):
     """Reporte de ingresos totales (mensual/anual)
     
+    Args:
+        modo: 'mensual' o 'anual'
+        anio: Año a consultar (solo para modo mensual, por defecto el actual)
+        id_usuario_accion: Usuario que solicita el reporte (para bitácora)
+        exportar: Tipo de exportación ("pdf" o "excel"), None si solo visualización
+    
     Retorna: mes/anio, ingresos
-    NO usa el SP para evitar error de bitácora con idUsuario NULL
     """
     try:
+        # 1. Obtener datos del reporte
         with connection.cursor() as cur:
             # Si no se especifica año, usar el actual
             if modo == 'mensual' and anio is None:
                 cur.execute("SELECT YEAR(GETDATE())")
                 anio = cur.fetchone()[0]
             
-            # Consulta directa sin usar el SP (para evitar error de bitácora)
+            # Consulta directa
             if modo == 'mensual':
                 sql = """
                 SELECT 
@@ -1417,29 +1506,50 @@ def sp_reporte_ingresos_totales(modo: str = 'mensual', anio: int = None):
                 cur.execute(sql)
             
             rows = cur.fetchall()
-            if not rows:
-                return []
-            
-            # Obtener columnas originales
-            cols_orig = [c[0] for c in cur.description]
-            
-            # Mapear a los nombres que espera el frontend
-            result = []
-            for row in rows:
-                data_dict = dict(zip(cols_orig, row))
-                if modo == 'mensual':
-                    normalized = {
-                        'mes': data_dict.get('Mes'),
-                        'ingresos': float(data_dict.get('Ingresos', 0))
-                    }
-                else:
-                    normalized = {
-                        'anio': data_dict.get('Anio'),
-                        'ingresos': float(data_dict.get('Ingresos', 0))
-                    }
-                result.append(normalized)
-            
-            return result
+            cols_orig = [c[0] for c in cur.description] if rows else []
+        
+        # 2. Registrar en bitácora SOLO si se está exportando
+        if id_usuario_accion and exportar:
+            import json
+            datos = json.dumps({
+                'reporte': 'ingresos_totales',
+                'formato_exportacion': exportar,  # "pdf" o "excel"
+                'modo': modo,
+                'anio': anio if modo == 'mensual' else None,
+                'registros': len(rows)
+            })
+            with connection.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO dbo.tbBitacoraTransacciones 
+                    (idUsuario, entidad, operacion, datosNuevo)
+                    VALUES (%s, 'Reportes', 'EXPORTAR_INGRESOS', %s)
+                """, [id_usuario_accion, datos])
+            connection.commit()
+            print(f"✅ Exportación registrada en bitácora: EXPORTAR_INGRESOS ({exportar.upper()}), usuario={id_usuario_accion}")
+        
+        if not rows:
+            return []
+        
+        # Mapear a los nombres que espera el frontend
+        result = []
+        for row in rows:
+            data_dict = dict(zip(cols_orig, row))
+            if modo == 'mensual':
+                normalized = {
+                    'mes': data_dict.get('Mes'),
+                    'ingresos': float(data_dict.get('Ingresos', 0))
+                }
+            else:
+                normalized = {
+                    'anio': data_dict.get('Anio'),
+                    'ingresos': float(data_dict.get('Ingresos', 0))
+                }
+            result.append(normalized)
+        
+        return result
     except Exception as e:
-        print(f"Error en sp_reporte_ingresos_totales: {e}")
+        print(f"❌ Error en sp_reporte_ingresos_totales: {e}")
+        import traceback
+        traceback.print_exc()
+        connection.rollback()
         return []

@@ -1327,13 +1327,21 @@ def api_reporte_ventas_fecha(request):
     """Reporte de ventas por fecha"""
     desde = request.GET.get("desde")
     hasta = request.GET.get("hasta")
-    id_usuario = request.GET.get("idUsuario")
+    id_usuario_filtro = request.GET.get("idUsuario")
     id_categoria = request.GET.get("idCategoria")
+    exportar = request.GET.get("exportar")  # "pdf" o "excel"
+    
+    # Solo registrar en bitácora si se está exportando (no en visualización normal)
+    id_usuario_accion = None
+    if exportar in ("pdf", "excel"):
+        id_usuario_accion = request.session.get("id_usuario_db")
     
     data = sp_reporte_ventas_por_fecha(
         desde, hasta,
-        int(id_usuario) if id_usuario else None,
-        int(id_categoria) if id_categoria else None
+        int(id_usuario_filtro) if id_usuario_filtro else None,
+        int(id_categoria) if id_categoria else None,
+        id_usuario_accion,  # Usuario que solicita el reporte (para bitácora)
+        exportar  # Tipo de exportación
     )
     return JsonResponse({"ok": True, "data": data})
 
@@ -1343,7 +1351,18 @@ def api_reporte_ventas_fecha(request):
 def api_reporte_inventario(request):
     """Reporte de inventario actual"""
     solo_criticos = request.GET.get("soloCriticos", "0").lower() in ("1", "true")
-    data = sp_reporte_inventario_actual(solo_criticos)
+    exportar = request.GET.get("exportar")  # "pdf" o "excel"
+    
+    # Solo registrar en bitácora si se está exportando (no en visualización normal)
+    id_usuario_accion = None
+    if exportar in ("pdf", "excel"):
+        id_usuario_accion = request.session.get("id_usuario_db")
+    
+    data = sp_reporte_inventario_actual(
+        solo_criticos,
+        id_usuario_accion,  # Usuario que solicita el reporte (para bitácora)
+        exportar  # Tipo de exportación
+    )
     return JsonResponse({"ok": True, "data": data})
 
 
@@ -1354,8 +1373,18 @@ def api_reporte_mas_vendidos(request):
     top_n = int(request.GET.get("topN", 10))
     desde = request.GET.get("desde")
     hasta = request.GET.get("hasta")
+    exportar = request.GET.get("exportar")  # "pdf" o "excel"
     
-    data = sp_reporte_productos_mas_vendidos(top_n, desde, hasta)
+    # Solo registrar en bitácora si se está exportando (no en visualización normal)
+    id_usuario_accion = None
+    if exportar in ("pdf", "excel"):
+        id_usuario_accion = request.session.get("id_usuario_db")
+    
+    data = sp_reporte_productos_mas_vendidos(
+        top_n, desde, hasta,
+        id_usuario_accion,  # Usuario que solicita el reporte (para bitácora)
+        exportar  # Tipo de exportación
+    )
     return JsonResponse({"ok": True, "data": data})
 
 
@@ -1365,6 +1394,17 @@ def api_reporte_ingresos(request):
     """Reporte de ingresos totales"""
     modo = request.GET.get("modo", "mensual")
     anio = request.GET.get("anio")
+    exportar = request.GET.get("exportar")  # "pdf" o "excel"
     
-    data = sp_reporte_ingresos_totales(modo, int(anio) if anio else None)
+    # Solo registrar en bitácora si se está exportando (no en visualización normal)
+    id_usuario_accion = None
+    if exportar in ("pdf", "excel"):
+        id_usuario_accion = request.session.get("id_usuario_db")
+    
+    data = sp_reporte_ingresos_totales(
+        modo, 
+        int(anio) if anio else None,
+        id_usuario_accion,  # Usuario que solicita el reporte (para bitácora)
+        exportar  # Tipo de exportación
+    )
     return JsonResponse({"ok": True, "data": data})

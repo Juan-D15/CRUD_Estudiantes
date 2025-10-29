@@ -443,11 +443,84 @@ function cerrarModalReporte() {
   document.getElementById('modalGenerarReporte').style.display = 'none';
 }
 
+// 🔥 NUEVA FUNCIÓN: Registra la exportación en la bitácora del backend
+async function registrarExportacionEnBitacora(reportesIds, tipoExportacion) {
+  console.log(`📝 Registrando exportación en bitácora: ${reportesIds.join(', ')} como ${tipoExportacion.toUpperCase()}`);
+  
+  const fechaDesde = document.getElementById('fechaDesde').value;
+  const fechaHasta = document.getElementById('fechaHasta').value;
+  const usuario = document.getElementById('filtroUsuario').value;
+  const categoria = document.getElementById('filtroCategoria').value;
+  
+  const promesas = [];
+  
+  reportesIds.forEach(reporteId => {
+    let url = '';
+    const params = new URLSearchParams();
+    params.append('exportar', tipoExportacion); // 🔥 Parámetro clave para bitácora
+    
+    switch(reporteId) {
+      case 'ventas':
+        if (fechaDesde) params.append('desde', fechaDesde);
+        if (fechaHasta) params.append('hasta', fechaHasta);
+        if (usuario) params.append('idUsuario', usuario);
+        if (categoria) params.append('idCategoria', categoria);
+        url = `${window.API_REPORTE_VENTAS}?${params.toString()}`;
+        break;
+        
+      case 'inventario':
+        url = `${window.API_REPORTE_INVENTARIO}?${params.toString()}`;
+        break;
+        
+      case 'productos':
+        params.append('topN', '10');
+        if (fechaDesde) params.append('desde', fechaDesde);
+        if (fechaHasta) params.append('hasta', fechaHasta);
+        url = `${window.API_REPORTE_MAS_VENDIDOS}?${params.toString()}`;
+        break;
+        
+      case 'ingresos':
+        const tabActivo = document.querySelector('.tab-btn.active');
+        const modo = tabActivo ? tabActivo.dataset.tab : 'mensual';
+        params.append('modo', modo);
+        url = `${window.API_REPORTE_INGRESOS}?${params.toString()}`;
+        break;
+    }
+    
+    if (url) {
+      console.log(`📡 Registrando ${reporteId}:`, url);
+      promesas.push(
+        fetch(url, {
+          headers: { 'X-CSRFToken': csrftoken }
+        }).then(response => {
+          if (response.ok) {
+            console.log(`✅ Reporte ${reporteId} registrado en bitácora`);
+          } else {
+            console.warn(`⚠️ Error al registrar ${reporteId} en bitácora:`, response.status);
+          }
+        }).catch(err => {
+          console.error(`❌ Error en llamada de ${reporteId}:`, err);
+        })
+      );
+    }
+  });
+  
+  // Esperar a que todas las llamadas se completen
+  await Promise.all(promesas);
+  console.log('✅ Todas las exportaciones registradas en bitácora');
+}
+
 // ========== Exportar reportes ==========
 async function exportarPDF() {
   if (typeof jspdf === 'undefined') {
     alert('La librería jsPDF no está cargada');
     return;
+  }
+  
+  // 🔥 IMPORTANTE: Registrar en bitácora antes de generar el PDF
+  const reportesArray = Array.from(reportesSeleccionados);
+  if (reportesArray.length > 0) {
+    await registrarExportacionEnBitacora(reportesArray, 'pdf');
   }
   
   const { jsPDF } = jspdf;
@@ -502,6 +575,12 @@ async function exportarExcel() {
   if (typeof ExcelJS === 'undefined') {
     alert('La librería ExcelJS no está cargada');
     return;
+  }
+  
+  // 🔥 IMPORTANTE: Registrar en bitácora antes de generar el Excel
+  const reportesArray = Array.from(reportesSeleccionados);
+  if (reportesArray.length > 0) {
+    await registrarExportacionEnBitacora(reportesArray, 'excel');
   }
   
   const workbook = new ExcelJS.Workbook();
