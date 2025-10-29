@@ -1,0 +1,194 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reportes</title>
+  <link rel="stylesheet" href="{% static 'css/reportes-productos.css' %}" />
+</head>
+<body>
+  <div class="frame">
+    <a class="back" href="{% url 'admin_prod_index' %}" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+    <div class="content">
+      <header class="hero">
+        <h1 class="title">REPORTES</h1>
+        <p class="subtitle">Análisis y visualización de datos del sistema</p>
+        <div style="margin-top: 24px;">
+          <button class="btn-generate" id="btnGenerarReporte">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="2"/>
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span>Generar Reporte</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Modal de generar reporte -->
+      <div id="modalGenerarReporte" class="modal" style="display: none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Generar Reporte</h2>
+            <button class="modal-close" onclick="cerrarModalReporte()">&times;</button>
+          </div>
+          <div id="reporteChecklist">
+            <!-- Se carga dinámicamente -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="cerrarModalReporte()">Cancelar</button>
+            <button type="button" class="btn-pdf" onclick="exportarPDF()">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" fill="none" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              Exportar PDF
+            </button>
+            <button type="button" class="btn-excel" onclick="exportarExcel()">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M14 2v6h6M16 17H8M16 13H8M10 9H8" fill="none" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              Exportar Excel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenedor principal de reportes -->
+      <div class="reports-container">
+        <!-- Panel de filtros -->
+        <div class="filters-panel">
+          <h3>Filtros</h3>
+          <div class="filter-group">
+            <label>Rango de Fechas</label>
+            <div class="date-range">
+              <input type="date" id="fechaDesde" />
+              <span>hasta</span>
+              <input type="date" id="fechaHasta" />
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>Usuario</label>
+            <select id="filtroUsuario">
+              <option value="">Todos los usuarios</option>
+              <option value="1">Admin</option>
+              <option value="2">Secretario</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Categoría</label>
+            <select id="filtroCategoria">
+              <option value="">Todas las categorías</option>
+              <option value="1">Electrónica</option>
+              <option value="2">Ropa y Accesorios</option>
+              <option value="3">Hogar y Jardín</option>
+            </select>
+          </div>
+          <button class="btn-apply" id="btnAplicar">Aplicar Filtros</button>
+        </div>
+
+        <!-- Grid de reportes -->
+        <div class="reports-grid">
+          <!-- Reporte 1: Ventas por Fecha -->
+          <div class="report-card">
+            <div class="report-header">
+              <h3>Ventas por Fecha</h3>
+              <button class="btn-add-report" data-reporte="ventas">
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                  <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>Agregar al Reporte</span>
+              </button>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartVentas"></canvas>
+            </div>
+          </div>
+
+          <!-- Reporte 2: Inventario Actual -->
+          <div class="report-card">
+            <div class="report-header">
+              <h3>Inventario Actual</h3>
+              <button class="btn-add-report" data-reporte="inventario">
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                  <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>Agregar al Reporte</span>
+              </button>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-card critical">
+                <div class="stat-value" id="stockCritico">5</div>
+                <div class="stat-label">Stock Crítico</div>
+              </div>
+              <div class="stat-card warning">
+                <div class="stat-value" id="entradas30">125</div>
+                <div class="stat-label">Entradas (30 días)</div>
+              </div>
+              <div class="stat-card info">
+                <div class="stat-value" id="salidas30">89</div>
+                <div class="stat-label">Salidas (30 días)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reporte 3: Productos Más Vendidos -->
+          <div class="report-card">
+            <div class="report-header">
+              <h3>Top 10 Productos Más Vendidos</h3>
+              <button class="btn-add-report" data-reporte="productos">
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                  <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>Agregar al Reporte</span>
+              </button>
+            </div>
+            <div class="top-products">
+              <div id="topProductsList">
+                <!-- Se carga dinámicamente -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Reporte 4: Ingresos Totales -->
+          <div class="report-card">
+            <div class="report-header">
+              <h3>Ingresos Totales</h3>
+              <button class="btn-add-report" data-reporte="ingresos">
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                  <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>Agregar al Reporte</span>
+              </button>
+            </div>
+            <div class="income-tabs">
+              <button class="tab-btn active" data-tab="mensual">Mensual</button>
+              <button class="tab-btn" data-tab="anual">Anual</button>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartIngresos"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+  <script>
+    window.API_REPORTE_VENTAS = "{% url 'api_reporte_ventas_fecha' %}";
+    window.API_REPORTE_INVENTARIO = "{% url 'api_reporte_inventario' %}";
+    window.API_REPORTE_MAS_VENDIDOS = "{% url 'api_reporte_mas_vendidos' %}";
+    window.API_REPORTE_INGRESOS = "{% url 'api_reporte_ingresos' %}";
+  </script>
+  <script src="{% static 'js/reportes-productos.js' %}"></script>
+</body>
+</html>

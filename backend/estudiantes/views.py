@@ -929,3 +929,442 @@ def reset_commit(request):
 def _bloqueo_portal_incorrecto(request, template):
     # Mensaje neutro para no revelar detalles
     return render(request, template, {"error": "No autorizado en este portal. Usa el acceso correcto."})
+
+
+# ============================================================
+# PRODUCTOS / VENTAS - APIs
+# ============================================================
+
+from .db import (
+    # Categorías
+    sp_categoria_crear, sp_categoria_actualizar, sp_categoria_eliminar,
+    sp_categoria_obtener, sp_categoria_listar,
+    # Inventario
+    sp_inventario_historial,
+    # Productos
+    sp_producto_crear, sp_producto_actualizar, sp_producto_eliminar,
+    sp_producto_obtener, sp_producto_listar, sp_producto_listar_con_categorias,
+    # Producto-Categoría
+    sp_producto_categoria_asignar, sp_producto_categoria_quitar, sp_producto_categoria_listar,
+    # Inventario
+    sp_inventario_registrar_entrada, vw_inventario_actual,
+    # Ventas
+    sp_registrar_venta, listar_ventas, obtener_venta_detalle,
+    # Reportes
+    sp_reporte_ventas_por_fecha, sp_reporte_inventario_actual,
+    sp_reporte_productos_mas_vendidos, sp_reporte_ingresos_totales,
+)
+
+# ---------------------------
+# APIs: Categorías
+# ---------------------------
+@require_role("admin", "secretaria")
+@require_http_methods(["GET"])
+def api_categoria_listar(request):
+    """Lista categorías con paginación y búsqueda"""
+    buscar = request.GET.get("buscar")
+    solo_activas = request.GET.get("soloActivas", "0").lower() in ("1", "true")
+    page = int(request.GET.get("page", 1))
+    page_size = int(request.GET.get("pageSize", 100))
+    
+    result = sp_categoria_listar(buscar, solo_activas, page, page_size)
+    return JsonResponse({"ok": True, **result})
+
+
+@require_role("admin")
+@require_http_methods(["GET"])
+def api_categoria_detalle(request, id_cat: int):
+    """Obtiene detalles de una categoría"""
+    cat = sp_categoria_obtener(id_cat)
+    if not cat:
+        return JsonResponse({"ok": False, "msg": "Categoría no encontrada"}, status=404)
+    return JsonResponse({"ok": True, "data": cat})
+
+
+@require_role("admin")
+@require_http_methods(["POST"])
+def api_categoria_crear(request):
+    """Crea una nueva categoría"""
+    try:
+        body = json.loads(request.body.decode("utf-8") or "{}")
+    except:
+        return JsonResponse({"ok": False, "msg": "JSON inválido"}, status=400)
+    
+    nombre = (body.get("nombre") or "").strip()
+    estado = (body.get("estado") or "activa").strip()
+    id_usuario = request.session.get("id_usuario_db")
+    
+    rc, id_cat = sp_categoria_crear(id_usuario, nombre, estado)
+    
+    if rc != 0:
+        MSG = {1: "Dato inválido", 2: "Categoría duplicada", 6: "Usuario no válido", 5: "Error general"}
+        return JsonResponse({"ok": False, "rc": rc, "msg": MSG.get(rc, "Error")}, status=400)
+    
+    return JsonResponse({"ok": True, "idCategoria": id_cat})
+
+
+@require_role("admin")
+@require_http_methods(["PUT"])
+def api_categoria_actualizar(request, id_cat: int):
+    """Actualiza una categoría"""
+    try:
+        body = json.loads(request.body.decode("utf-8") or "{}")
+    except:
+        return JsonResponse({"ok": False, "msg": "JSON inválido"}, status=400)
+    
+    nombre = (body.get("nombre") or "").strip()
+    estado = (body.get("estado") or "activa").strip()
+    id_usuario = request.session.get("id_usuario_db")
+    
+    rc = sp_categoria_actualizar(id_usuario, id_cat, nombre, estado)
+    
+    if rc != 0:
+        MSG = {1: "Dato inválido", 2: "Categoría duplicada", 3: "No existe", 5: "Error general"}
+        return JsonResponse({"ok": False, "rc": rc, "msg": MSG.get(rc, "Error")}, status=400)
+    
+    return JsonResponse({"ok": True})
+
+
+@require_role("admin")
+@require_http_methods(["DELETE"])
+def api_categoria_eliminar(request, id_cat: int):
+    """Elimina una categoría (soft por defecto)"""
+    modo = request.GET.get("modo", "soft")
+    id_usuario = request.session.get("id_usuario_db")
+    
+    rc = sp_categoria_eliminar(id_usuario, id_cat, modo)
+    
+    if rc != 0:
+        MSG = {3: "No existe", 7: "Tiene referencias", 5: "Error general"}
+        return JsonResponse({"ok": False, "rc": rc, "msg": MSG.get(rc, "Error")}, status=400)
+    
+    return JsonResponse({"ok": True})
+
+
+# ---------------------------
+# APIs: Productos
+# ---------------------------
+@require_role("admin", "secretaria")
+@require_http_methods(["GET"])
+def api_producto_listar(request):
+    """Lista productos con filtros y paginación"""
+    buscar = request.GET.get("buscar")
+    id_categoria = request.GET.get("idCategoria")
+    estado = request.GET.get("estado")
+    page = int(request.GET.get("page", 1))
+    page_size = int(request.GET.get("pageSize", 100))
+    con_categorias = request.GET.get("conCategorias", "0").lower() in ("1", "true")
+    
+    if con_categorias:
+        result = sp_producto_listar_con_categorias(
+            buscar, int(id_categoria) if id_categoria else None, estado, page, page_size
+        )
+    else:
+        result = sp_producto_listar(
+            buscar, int(id_categoria) if id_categoria else None, estado, page, page_size
+        )
+    
+    return JsonResponse({"ok": True, **result})
+
+
+@require_role("admin", "secretaria")
+@require_http_methods(["GET"])
+def api_producto_detalle(request, id_prod: int):
+    """Obtiene detalles de un producto"""
+    prod = sp_producto_obtener(id_prod)
+    if not prod:
+        return JsonResponse({"ok": False, "msg": "Producto no encontrado"}, status=404)
+    return JsonResponse({"ok": True, "data": prod})
+
+
+@require_role("admin")
+@require_http_methods(["POST"])
+def api_producto_crear(request):
+    """Crea un nuevo producto"""
+    try:
+        body = json.loads(request.body.decode("utf-8") or "{}")
+    except:
+        return JsonResponse({"ok": False, "msg": "JSON inválido"}, status=400)
+    
+    id_usuario = request.session.get("id_usuario_db")
+    codigo = (body.get("codigo") or "").strip()
+    nombre = (body.get("nombre") or "").strip()
+    descripcion = (body.get("descripcion") or "").strip()
+    precio_costo = float(body.get("precioCosto", 0))
+    precio_venta = float(body.get("precioVenta", 0))
+    stock_actual = int(body.get("stockActual", 0))
+    stock_minimo = int(body.get("stockMinimo", 0))
+    descuento_maximo_pct = float(body.get("descuentoMaximoPct", 0))
+    estado = (body.get("estado") or "activo").strip()
+    
+    rc, id_prod = sp_producto_crear(
+        id_usuario, codigo, nombre, descripcion,
+        precio_costo, precio_venta, stock_actual, stock_minimo,
+        descuento_maximo_pct, estado
+    )
+    
+    if rc != 0:
+        MSG = {1: "Dato inválido", 2: "Código duplicado", 6: "Usuario no válido", 5: "Error general"}
+        return JsonResponse({"ok": False, "rc": rc, "msg": MSG.get(rc, "Error")}, status=400)
+    
+    return JsonResponse({"ok": True, "idProducto": id_prod})
+
+
+@require_role("admin")
+@require_http_methods(["PUT"])
+def api_producto_actualizar(request, id_prod: int):
+    """Actualiza un producto"""
+    try:
+        body = json.loads(request.body.decode("utf-8") or "{}")
+    except:
+        return JsonResponse({"ok": False, "msg": "JSON inválido"}, status=400)
+    
+    id_usuario = request.session.get("id_usuario_db")
+    codigo = (body.get("codigo") or "").strip()
+    nombre = (body.get("nombre") or "").strip()
+    descripcion = (body.get("descripcion") or "").strip()
+    precio_costo = float(body.get("precioCosto", 0))
+    precio_venta = float(body.get("precioVenta", 0))
+    stock_actual = int(body.get("stockActual", 0))
+    stock_minimo = int(body.get("stockMinimo", 0))
+    descuento_maximo_pct = float(body.get("descuentoMaximoPct", 0))
+    estado = (body.get("estado") or "activo").strip()
+    
+    rc = sp_producto_actualizar(
+        id_usuario, id_prod, codigo, nombre, descripcion,
+        precio_costo, precio_venta, stock_actual, stock_minimo,
+        descuento_maximo_pct, estado
+    )
+    
+    if rc != 0:
+        MSG = {1: "Dato inválido", 2: "Código duplicado", 3: "No existe", 5: "Error general"}
+        return JsonResponse({"ok": False, "rc": rc, "msg": MSG.get(rc, "Error")}, status=400)
+    
+    return JsonResponse({"ok": True})
+
+
+@require_role("admin")
+@require_http_methods(["DELETE"])
+def api_producto_eliminar(request, id_prod: int):
+    """Elimina un producto (soft por defecto)"""
+    modo = request.GET.get("modo", "soft")
+    id_usuario = request.session.get("id_usuario_db")
+    
+    rc = sp_producto_eliminar(id_usuario, id_prod, modo)
+    
+    if rc != 0:
+        MSG = {3: "No existe", 7: "Tiene referencias", 5: "Error general"}
+        return JsonResponse({"ok": False, "rc": rc, "msg": MSG.get(rc, "Error")}, status=400)
+    
+    return JsonResponse({"ok": True})
+
+
+@require_role("admin")
+@require_http_methods(["GET"])
+def api_producto_categorias(request, id_prod: int):
+    """Lista las categorías de un producto"""
+    cats = sp_producto_categoria_listar(id_prod)
+    return JsonResponse({"ok": True, "data": cats})
+
+
+@require_role("admin")
+@require_http_methods(["POST"])
+def api_producto_categoria_asignar(request, id_prod: int, id_cat: int):
+    """Asigna una categoría a un producto"""
+    id_usuario = request.session.get("id_usuario_db")
+    rc = sp_producto_categoria_asignar(id_usuario, id_prod, id_cat)
+    
+    if rc != 0:
+        MSG = {3: "Producto o categoría no existe", 6: "Usuario no válido", 5: "Error general"}
+        return JsonResponse({"ok": False, "rc": rc, "msg": MSG.get(rc, "Error")}, status=400)
+    
+    return JsonResponse({"ok": True})
+
+
+@require_role("admin")
+@require_http_methods(["DELETE"])
+def api_producto_categoria_quitar(request, id_prod: int, id_cat: int):
+    """Quita una categoría de un producto"""
+    id_usuario = request.session.get("id_usuario_db")
+    rc = sp_producto_categoria_quitar(id_usuario, id_prod, id_cat)
+    
+    if rc != 0:
+        return JsonResponse({"ok": False, "rc": rc, "msg": "Error al quitar categoría"}, status=400)
+    
+    return JsonResponse({"ok": True})
+
+
+# ---------------------------
+# APIs: Inventario
+# ---------------------------
+@require_role("admin", "secretaria")
+@require_http_methods(["GET"])
+def api_inventario_actual(request):
+    """Obtiene el inventario actual"""
+    buscar = request.GET.get("buscar")
+    solo_criticos = request.GET.get("soloCriticos", "0").lower() in ("1", "true")
+    page = int(request.GET.get("page", 1))
+    page_size = int(request.GET.get("pageSize", 100))
+    
+    result = vw_inventario_actual(buscar, solo_criticos, page, page_size)
+    return JsonResponse({"ok": True, **result})
+
+
+@require_role("admin")
+@require_http_methods(["POST"])
+def api_inventario_entrada(request):
+    """Registra un movimiento de inventario (entrada o salida)"""
+    try:
+        body = json.loads(request.body.decode("utf-8") or "{}")
+    except:
+        return JsonResponse({"ok": False, "msg": "JSON inválido"}, status=400)
+    
+    id_usuario = request.session.get("id_usuario_db")
+    id_producto = int(body.get("idProducto", 0))
+    cantidad = int(body.get("cantidad", 0))
+    tipo_movimiento = (body.get("tipoMovimiento") or "E").strip().upper()
+    descripcion = (body.get("descripcion") or "").strip()
+    
+    # Solo tomar costoUnitario si se envió y es válido
+    costo_unit = 0.0
+    if "costoUnitario" in body and body["costoUnitario"]:
+        try:
+            costo_unit = float(body["costoUnitario"])
+        except (ValueError, TypeError):
+            costo_unit = 0.0
+    
+    # Descripción con tipo de movimiento
+    motivo = f"{descripcion}" if descripcion else f"Movimiento tipo {tipo_movimiento}"
+    
+    # Llamar función con tipo de movimiento
+    rc = sp_inventario_registrar_entrada(id_usuario, id_producto, cantidad, costo_unit, motivo, tipo_movimiento)
+    
+    if rc != 0:
+        MSG = {
+            1: "Dato inválido", 
+            3: "Producto no encontrado",
+            6: "Producto o usuario no válido", 
+            5: "Error general", 
+            11: "Stock insuficiente para realizar la salida"
+        }
+        return JsonResponse({"ok": False, "rc": rc, "msg": MSG.get(rc, "Error")}, status=400)
+    
+    return JsonResponse({"ok": True})
+
+
+@require_role("admin", "secretaria")
+@require_http_methods(["GET"])
+def api_inventario_historial(request, id_prod: int):
+    """Obtiene el historial de movimientos de un producto"""
+    data = sp_inventario_historial(id_prod)
+    return JsonResponse({"ok": True, "data": data})
+
+
+# ---------------------------
+# APIs: Ventas
+# ---------------------------
+@require_role("admin")
+@require_http_methods(["GET"])
+def api_ventas_listar(request):
+    """Lista ventas con filtros"""
+    fecha_inicio = request.GET.get("fechaInicio")
+    fecha_fin = request.GET.get("fechaFin")
+    id_usuario = request.GET.get("idUsuario")
+    limit = int(request.GET.get("limit", 100))
+    offset = int(request.GET.get("offset", 0))
+    
+    data = listar_ventas(
+        fecha_inicio, fecha_fin,
+        int(id_usuario) if id_usuario else None,
+        limit, offset
+    )
+    return JsonResponse({"ok": True, "data": data})
+
+
+@require_role("admin")
+@require_http_methods(["POST"])
+def api_venta_crear(request):
+    """Registra una nueva venta"""
+    try:
+        body = json.loads(request.body.decode("utf-8") or "{}")
+    except:
+        return JsonResponse({"ok": False, "msg": "JSON inválido"}, status=400)
+    
+    id_usuario = request.session.get("id_usuario_db")
+    detalles = body.get("detalles", [])
+    
+    if not detalles:
+        return JsonResponse({"ok": False, "msg": "La venta debe tener al menos un producto"}, status=400)
+    
+    rc, id_venta = sp_registrar_venta(id_usuario, detalles)
+    
+    if rc != 0:
+        MSG = {
+            1: "Dato inválido",
+            6: "Usuario no válido",
+            11: "Stock insuficiente",
+            5: "Error general"
+        }
+        return JsonResponse({"ok": False, "rc": rc, "msg": MSG.get(rc, "Error")}, status=400)
+    
+    return JsonResponse({"ok": True, "idVenta": id_venta})
+
+
+@require_role("admin")
+@require_http_methods(["GET"])
+def api_venta_detalle(request, id_venta: int):
+    """Obtiene detalles de una venta"""
+    detalles = obtener_venta_detalle(id_venta)
+    return JsonResponse({"ok": True, "data": detalles})
+
+
+# ---------------------------
+# APIs: Reportes Productos
+# ---------------------------
+@require_role("admin", "secretaria")
+@require_http_methods(["GET"])
+def api_reporte_ventas_fecha(request):
+    """Reporte de ventas por fecha"""
+    desde = request.GET.get("desde")
+    hasta = request.GET.get("hasta")
+    id_usuario = request.GET.get("idUsuario")
+    id_categoria = request.GET.get("idCategoria")
+    
+    data = sp_reporte_ventas_por_fecha(
+        desde, hasta,
+        int(id_usuario) if id_usuario else None,
+        int(id_categoria) if id_categoria else None
+    )
+    return JsonResponse({"ok": True, "data": data})
+
+
+@require_role("admin", "secretaria")
+@require_http_methods(["GET"])
+def api_reporte_inventario(request):
+    """Reporte de inventario actual"""
+    solo_criticos = request.GET.get("soloCriticos", "0").lower() in ("1", "true")
+    data = sp_reporte_inventario_actual(solo_criticos)
+    return JsonResponse({"ok": True, "data": data})
+
+
+@require_role("admin", "secretaria")
+@require_http_methods(["GET"])
+def api_reporte_mas_vendidos(request):
+    """Reporte de productos más vendidos"""
+    top_n = int(request.GET.get("topN", 10))
+    desde = request.GET.get("desde")
+    hasta = request.GET.get("hasta")
+    
+    data = sp_reporte_productos_mas_vendidos(top_n, desde, hasta)
+    return JsonResponse({"ok": True, "data": data})
+
+
+@require_role("admin", "secretaria")
+@require_http_methods(["GET"])
+def api_reporte_ingresos(request):
+    """Reporte de ingresos totales"""
+    modo = request.GET.get("modo", "mensual")
+    anio = request.GET.get("anio")
+    
+    data = sp_reporte_ingresos_totales(modo, int(anio) if anio else None)
+    return JsonResponse({"ok": True, "data": data})

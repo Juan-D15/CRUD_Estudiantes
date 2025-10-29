@@ -105,6 +105,22 @@
             </svg>
         </a>
 
+        <!-- Gestión Productos -->
+        <a class="card" href="{% url 'admin_prod_index' %}" id="cardProductos">
+          <h3>Gestión<br>Productos</h3>
+          <svg viewBox="0 0 64 64" class="icon-draw" aria-hidden="true">
+            <!-- Caja principal -->
+            <path class="stroke" d="M14 18l18-8 18 8v28l-18 8-18-8V18z"/>
+            <!-- Tapa superior -->
+            <path class="stroke" d="M32 10v8"/>
+            <path class="stroke" d="M14 18h18"/>
+            <!-- Línea diagonal tapa -->
+            <path class="stroke" d="M14 18l18-8"/>
+            <!-- Líneas decorativas -->
+            <path class="stroke" d="M20 38h24M20 46h24"/>
+          </svg>
+        </a>
+
       </div>
     </main>
 
@@ -136,6 +152,13 @@
                 vector-effect="non-scaling-stroke"
                 stroke-linejoin="round"/>
             <circle class="stroke" cx="32" cy="32" r="6"/>
+        </svg>
+      </a>
+      <a class="dock-item" href="{% url 'admin_prod_index' %}" aria-label="Productos" id="dockProductos">
+        <svg viewBox="0 0 64 64" class="dock-svg" aria-hidden="true">
+          <path class="stroke" d="M14 18l18-8 18 8v28l-18 8-18-8V18z"/>
+          <path class="stroke" d="M14 18l18-8"/>
+          <path class="stroke" d="M20 38h24M20 46h24"/>
         </svg>
       </a>
     </nav>

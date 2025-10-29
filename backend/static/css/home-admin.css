@@ -62,7 +62,7 @@ body{
 }
 
 /* Cards grid */
-.cards{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:22px}
+.cards{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:22px}
 .card{
   position:relative; display:grid; place-items:center; text-align:center;
   padding:28px 18px; border-radius:22px; text-decoration:none; color:#fff;
@@ -126,7 +126,12 @@ body{
 .btn-ghost:hover{ border-color:#34d399; box-shadow:0 0 30px rgba(52,211,153,.22) inset, 0 0 18px rgba(52,211,153,.25); background:rgba(52,211,153,.12) }
 .btn-ghost.danger:hover{ border-color:#ff4b2f; box-shadow:0 0 30px rgba(255,75,47,.22) inset,0 0 18px rgba(255,75,47,.25); background:rgba(255,75,47,.15) }
 
-@media (max-width: 920px){
+/* Responsive para 4 tarjetas */
+@media (max-width: 1200px){
+  .cards{grid-template-columns:repeat(2, minmax(0,1fr))}
+}
+
+@media (max-width: 768px){
   .cards{grid-template-columns:1fr}
   .wrap{margin-bottom:160px}
 }

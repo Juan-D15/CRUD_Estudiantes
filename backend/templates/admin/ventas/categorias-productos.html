@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestión de Categorías</title>
+  <link rel="stylesheet" href="{% static 'css/categorias-productos.css' %}" />
+</head>
+<body>
+  <div class="frame">
+
+    <!-- Volver -->
+    <a class="back" href="{% url 'admin_prod_index' %}" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+
+    <!-- Contenido -->
+    <div class="content">
+      <header class="hero">
+        <h1 class="title">GESTIÓN DE CATEGORÍAS</h1>
+        <p class="subtitle">Administra las categorías de productos del sistema</p>
+      </header>
+
+      <!-- Barra de búsqueda y acciones -->
+      <div class="toolbar">
+        <div class="search-bar">
+          <input type="text" id="search" placeholder="Buscar categorías..." autocomplete="off" />
+          <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="m21 21-4.35-4.35" fill="none" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+        <button class="btn-create" id="btnCrear">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>Nueva Categoría</span>
+        </button>
+      </div>
+
+      <!-- Tabla de categorías -->
+      <div class="table-container">
+        <table id="tableCategorias">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Estado</th>
+              <th>Fecha Creación</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <!-- Datos dinámicos desde JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="pagination" id="pagination">
+        <!-- Generado dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // URLs de Django para el JavaScript
+    window.API_CATEGORIAS_LISTAR = "{% url 'api_categoria_listar' %}";
+    window.API_CATEGORIAS_CREAR = "{% url 'api_categoria_crear' %}";
+  </script>
+  <script src="{% static 'js/categorias-productos.js' %}"></script>
+</body>
+</html>

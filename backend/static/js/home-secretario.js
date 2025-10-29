@@ -25,27 +25,12 @@ function openConfirm({title, confirmText='Confirmar', cancelText='Cancelar', onC
   modal.querySelector('#mCancel').addEventListener('click', close);
   modal.querySelector('#mConfirm').addEventListener('click', ()=>{ close(); onConfirm && onConfirm(); });
 }
-function getCsrfToken() {
-  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
-async function doLogout(logoutUrl, redirectTo) {
-  try {
-    const r = await fetch(logoutUrl || '/logout', {
-      method: 'POST',
-      headers: { 'X-CSRFToken': getCsrfToken() }
-    });
-    if (!r.ok) {
-      await fetch(logoutUrl || '/logout', { method: 'GET', credentials: 'include' });
-    }
-  } catch(e) {}
-  finally { window.location.href = redirectTo || (window.SECRE_LOGIN_URL || '../secretario_login.html'); }
-}
 
 function getCsrfToken() {
   const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
   return m ? decodeURIComponent(m[1]) : '';
 }
+
 async function doLogout(logoutUrl, redirectTo) {
   try {
     const r = await fetch(logoutUrl || '/logout', {
@@ -96,7 +81,7 @@ uChange.addEventListener('click', ()=>{
     title:'¿Seguro que quieres cambiar de contraseña?',
     confirmText:'Continuar',
     cancelText:'Cancelar',
-    onConfirm:()=>{ window.location.href = '../admin-reset.html'; } // usa tu ruta real de reset
+    onConfirm:()=>{ window.location.href = window.SECRE_RESET_URL || '../admin-reset.html'; }
   });
 });
 uInfo.addEventListener('click', ()=>{
@@ -105,16 +90,8 @@ uInfo.addEventListener('click', ()=>{
 });
 
 // ---------- rutas rápidas (tarjetas + dock) ----------
-const goEstudiantes = document.getElementById('goEstudiantes');
-const goConfig      = document.getElementById('goConfig');
-const dockEst       = document.getElementById('dockEst');
-const dockCfg       = document.getElementById('dockCfg');
-
-const RUTA_EST = window.SECRE_ESTUDIANTES_URL || '../estudiantes/index.html';
-const RUTA_CFG = window.SECRE_CONFCUENTA_URL  || '../gestion-usuario/index.html';
-
-[goEstudiantes, dockEst].forEach(el => el.addEventListener('click', (e)=>{ e.preventDefault(); window.location.href = RUTA_EST; }));
-[goConfig, dockCfg].forEach(el => el.addEventListener('click',      (e)=>{ e.preventDefault(); window.location.href = RUTA_CFG; }));
+// Los href ya están configurados en el HTML con {% url %}, 
+// no necesitamos event listeners adicionales, la navegación es nativa
 
 // ---------- efecto “escritura” + aparición de tarjetas ----------
 const titleHolder = document.getElementById('titleHolder');

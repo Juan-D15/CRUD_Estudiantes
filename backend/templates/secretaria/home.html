@@ -21,7 +21,7 @@
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
         <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span>Cerrar Sesión</span>
+      <span>Volver</span>
     </button>
 
     <!-- Avatar Secretario / menú de usuario -->
@@ -78,6 +78,22 @@
           </svg>
         </a>
 
+        <!-- Gestión Productos -->
+        <a class="card" id="goProductos" href="{% url 'secre_prod_index' %}">
+          <h3>Gestión<br>Productos</h3>
+          <svg viewBox="0 0 64 64" class="icon-draw" aria-hidden="true">
+            <!-- Caja principal -->
+            <path class="stroke" d="M14 18l18-8 18 8v28l-18 8-18-8V18z"/>
+            <!-- Tapa superior -->
+            <path class="stroke" d="M32 10v8"/>
+            <path class="stroke" d="M14 18h18"/>
+            <!-- Línea diagonal tapa -->
+            <path class="stroke" d="M14 18l18-8"/>
+            <!-- Línea decorativa -->
+            <path class="stroke" d="M20 38h24M20 46h24"/>
+          </svg>
+        </a>
+
         <!-- Configuración de la cuenta -->
         <a class="card" id="goConfig" href="{% url 'secre_usr_index' %}">
           <h3>Configuración<br>de la cuenta</h3>
@@ -100,12 +116,19 @@
       </div>
     </main>
 
-    <!-- Dock inferior (2 accesos) -->
+    <!-- Dock inferior (3 accesos) -->
     <nav class="dock">
       <a class="dock-item" id="dockEst" href="{% url 'secre_est_index' %}" aria-label="Estudiantes">
         <svg viewBox="0 0 64 64" class="dock-svg" aria-hidden="true">
           <path d="M8 24l24-8 24 8-24 8-24-8z" class="stroke"/>
           <path d="M14 28v10c0 3 10 9 18 9s18-6 18-9V28" class="stroke"/>
+        </svg>
+      </a>
+      <a class="dock-item" id="dockProd" href="{% url 'secre_prod_index' %}" aria-label="Productos">
+        <svg viewBox="0 0 64 64" class="dock-svg" aria-hidden="true">
+          <path class="stroke" d="M14 18l18-8 18 8v28l-18 8-18-8V18z"/>
+          <path class="stroke" d="M14 18l18-8"/>
+          <path class="stroke" d="M20 38h24M20 46h24"/>
         </svg>
       </a>
       <a class="dock-item" id="dockCfg" href="{% url 'secre_usr_index' %}" aria-label="Configuración de la cuenta">
@@ -128,9 +151,10 @@
   <!-- URLs/config (ajústalas si cambian tus rutas) -->
   <script>
     window.SECRE_LOGIN_URL       = "{% url 'secretario_login' %}";
-    window.SECRE_RESET_URL = "{% url 'secretario_reset_page' %}";
+    window.SECRE_RESET_URL       = "{% url 'secretario_reset_page' %}";
     window.SECRE_INFO_URL        = "{% url 'secre_usr_info' %}";
-    window.SECRE_ESTUDIANTES_URL = "{% url 'secre_est_index' %}";   // cámbiala si usas otra vista
+    window.SECRE_ESTUDIANTES_URL = "{% url 'secre_est_index' %}";
+    window.SECRE_PRODUCTOS_URL   = "{% url 'secre_prod_index' %}";
     window.SECRE_CONFCUENTA_URL  = "{% url 'secre_usr_index' %}";
     window.SECRE_LOGOUT_URL      = "{% url 'logout_view' %}";
   </script>

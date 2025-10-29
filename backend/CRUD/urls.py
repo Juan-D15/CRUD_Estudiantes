@@ -67,6 +67,11 @@ urlpatterns = [
     path("secretaria/cuenta/info",    pages.secre_usr_info,  name="secre_usr_info"),
    # path("secretaria/cuenta/info/<int:id_usr>", pages.secre_usr_info, name="secre_usr_info"),
 
+    # Productos (secretaría)
+    path("secretaria/productos",              pages.secre_prod_index,      name="secre_prod_index"),
+    path("secretaria/productos/inventario",   pages.secre_prod_inventario, name="secre_prod_inventario"),
+    path("secretaria/productos/reportes",     pages.secre_prod_reportes,   name="secre_prod_reportes"),
+
 
     # API
     #Estudiantes (admin, secretaria)
@@ -100,4 +105,46 @@ urlpatterns = [
     # Export
     path("api/reportes/accesos/export",       api.api_rep_accesos_export,       name="api_rep_accesos_export"),
     path("api/reportes/transacciones/export", api.api_rep_transacciones_export, name="api_rep_transacciones_export"),
+
+    # ============ PRODUCTOS / VENTAS ============
+    # Vistas de páginas (admin)
+    path("admin/productos", pages.admin_prod_index, name="admin_prod_index"),
+    path("admin/productos/categorias", pages.admin_prod_categorias, name="admin_prod_categorias"),
+    path("admin/productos/sistema", pages.admin_prod_sistema, name="admin_prod_sistema"),
+    path("admin/productos/inventario", pages.admin_prod_inventario, name="admin_prod_inventario"),
+    path("admin/productos/ventas", pages.admin_prod_ventas, name="admin_prod_ventas"),
+    path("admin/productos/reportes", pages.admin_prod_reportes, name="admin_prod_reportes"),
+
+    # APIs - Categorías
+    path("api/categorias", api.api_categoria_listar, name="api_categoria_listar"),
+    path("api/categorias/<int:id_cat>", api.api_categoria_detalle, name="api_categoria_detalle"),
+    path("api/categorias/create", api.api_categoria_crear, name="api_categoria_crear"),
+    path("api/categorias/<int:id_cat>/update", api.api_categoria_actualizar, name="api_categoria_actualizar"),
+    path("api/categorias/<int:id_cat>/delete", api.api_categoria_eliminar, name="api_categoria_eliminar"),
+
+    # APIs - Productos
+    path("api/productos", api.api_producto_listar, name="api_producto_listar"),
+    path("api/productos/<int:id_prod>", api.api_producto_detalle, name="api_producto_detalle"),
+    path("api/productos/create", api.api_producto_crear, name="api_producto_crear"),
+    path("api/productos/<int:id_prod>/update", api.api_producto_actualizar, name="api_producto_actualizar"),
+    path("api/productos/<int:id_prod>/delete", api.api_producto_eliminar, name="api_producto_eliminar"),
+    path("api/productos/<int:id_prod>/categorias", api.api_producto_categorias, name="api_producto_categorias"),
+    path("api/productos/<int:id_prod>/categorias/<int:id_cat>/assign", api.api_producto_categoria_asignar, name="api_producto_categoria_asignar"),
+    path("api/productos/<int:id_prod>/categorias/<int:id_cat>/remove", api.api_producto_categoria_quitar, name="api_producto_categoria_quitar"),
+
+    # APIs - Inventario
+    path("api/inventario", api.api_inventario_actual, name="api_inventario_actual"),
+    path("api/inventario/entrada", api.api_inventario_entrada, name="api_inventario_entrada"),
+    path("api/inventario/historial/<int:id_prod>", api.api_inventario_historial, name="api_inventario_historial"),
+
+    # APIs - Ventas
+    path("api/ventas", api.api_ventas_listar, name="api_ventas_listar"),
+    path("api/ventas/create", api.api_venta_crear, name="api_venta_crear"),
+    path("api/ventas/<int:id_venta>", api.api_venta_detalle, name="api_venta_detalle"),
+
+    # APIs - Reportes Productos
+    path("api/reportes/productos/ventas", api.api_reporte_ventas_fecha, name="api_reporte_ventas_fecha"),
+    path("api/reportes/productos/inventario", api.api_reporte_inventario, name="api_reporte_inventario"),
+    path("api/reportes/productos/mas-vendidos", api.api_reporte_mas_vendidos, name="api_reporte_mas_vendidos"),
+    path("api/reportes/productos/ingresos", api.api_reporte_ingresos, name="api_reporte_ingresos"),
 ]

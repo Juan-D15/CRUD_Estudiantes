@@ -97,6 +97,28 @@ def secre_usr_info(request, id_usr=None):
     return render(request, "secretaria/gestion-usuario/info.html", {"id_usr": id_usr})
 
 
+# ---- Productos (secretaria) ----
+@require_role("secretaria")
+@ensure_csrf_cookie
+def secre_prod_index(request):
+    """Página principal del módulo de productos (secretaria)"""
+    return render(request, "secretaria/ventas/index-productos-secretario.html")
+
+
+@require_role("secretaria")
+@ensure_csrf_cookie
+def secre_prod_inventario(request):
+    """Inventario de productos (secretaria)"""
+    return render(request, "secretaria/ventas/inventario-productos-secretario.html")
+
+
+@require_role("secretaria")
+@ensure_csrf_cookie
+def secre_prod_reportes(request):
+    """Reportes de ventas (secretaria)"""
+    return render(request, "secretaria/ventas/reportes-ventas-secretario.html")
+
+
 # ===================== ADMIN =====================
 @require_role("admin")
 @ensure_csrf_cookie
@@ -179,3 +201,46 @@ def admin_rep_reportes(request):
 @ensure_csrf_cookie
 def admin_rep_filtros(request):        
     return render(request, "admin/tramites/filtros_busqueda.html")
+
+
+# ===================== PRODUCTOS / VENTAS =====================
+@require_role("admin")
+@ensure_csrf_cookie
+def admin_prod_index(request):
+    """Página principal del módulo de productos"""
+    return render(request, "admin/ventas/home-productos.html")
+
+
+@require_role("admin")
+@ensure_csrf_cookie
+def admin_prod_categorias(request):
+    """Gestión de categorías de productos"""
+    return render(request, "admin/ventas/categorias-productos.html")
+
+
+@require_role("admin")
+@ensure_csrf_cookie
+def admin_prod_sistema(request):
+    """Sistema de productos (CRUD completo)"""
+    return render(request, "admin/ventas/productos-sistema.html")
+
+
+@require_role("admin")
+@ensure_csrf_cookie
+def admin_prod_inventario(request):
+    """Gestión de inventario"""
+    return render(request, "admin/ventas/inventario-productos.html")
+
+
+@require_role("admin")
+@ensure_csrf_cookie
+def admin_prod_ventas(request):
+    """Registro de ventas"""
+    return render(request, "admin/ventas/ventas.html")
+
+
+@require_role("admin")
+@ensure_csrf_cookie
+def admin_prod_reportes(request):
+    """Reportes de productos y ventas"""
+    return render(request, "admin/ventas/reportes-productos.html")

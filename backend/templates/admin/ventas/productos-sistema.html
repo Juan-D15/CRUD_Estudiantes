@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestión de Productos</title>
+  <link rel="stylesheet" href="{% static 'css/productos-sistema.css' %}" />
+</head>
+<body>
+  <div class="frame">
+
+    <!-- Volver -->
+    <a class="back" href="{% url 'admin_prod_index' %}" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver</span>
+    </a>
+
+    <!-- Contenido -->
+    <div class="content">
+      <header class="hero">
+        <h1 class="title">PRODUCTOS DEL SISTEMA</h1>
+        <p class="subtitle">Administra los productos y sus categorías</p>
+      </header>
+
+      <!-- Barra de búsqueda y acciones -->
+      <div class="toolbar">
+        <div class="search-bar">
+          <input type="text" id="search" placeholder="Buscar productos..." autocomplete="off" />
+          <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="m21 21-4.35-4.35" fill="none" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+        <button class="btn-create" id="btnCrear">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>Agregar Producto</span>
+        </button>
+      </div>
+
+      <!-- Tabla de productos -->
+      <div class="table-container">
+        <table id="tableProductos">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Descripción</th>
+              <th>Precio Costo</th>
+              <th>Precio Venta</th>
+              <th>Stock</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <!-- Datos dinámicos desde JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="pagination" id="pagination">
+        <!-- Generado dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.API_PRODUCTOS_LISTAR = "{% url 'api_producto_listar' %}";
+    window.API_PRODUCTOS_CREAR = "{% url 'api_producto_crear' %}";
+    window.API_CATEGORIAS_LISTAR = "{% url 'api_categoria_listar' %}";
+    // URLs base para categorías de productos (se completan con IDs en JavaScript)
+    window.API_PRODUCTO_CATEGORIAS_BASE = "/api/productos/";
+  </script>
+  <script src="{% static 'js/productos-sistema.js' %}"></script>
+</body>
+</html>
+
+
