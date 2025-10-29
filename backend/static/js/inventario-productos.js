@@ -51,9 +51,9 @@ async function cargarInventarioDesdeAPI() {
     console.log('✅ Respuesta de la API:', data);
     
     if (data.ok) {
-      productos = data.items || [];
+      productos = data.data || [];
       console.log(`📦 Productos en inventario: ${productos.length} productos`);
-      renderizarInventario(data.items || [], data.total || 0);
+      renderizarInventario(data.data || [], data.total || 0);
     } else {
       console.error('❌ Error al cargar inventario:', data.msg);
     }
@@ -215,7 +215,7 @@ function abrirModalMovimiento(tipo) {
 
         ${esEntrada ? `
           <div class="field">
-            <label>Costo Unitario (opcional)</label>
+            <label>Costo Unitario</label>
             <input type="number" step="0.01" id="formCostoUnitario" name="costoUnitario" placeholder="Costo por unidad" min="0" />
           </div>
         ` : `
@@ -241,10 +241,31 @@ function abrirModalMovimiento(tipo) {
 
   modal.style.display = 'flex';
 
-  // Validar stock al seleccionar producto (solo para salidas)
-  if (!esEntrada) {
-    const selectProducto = document.getElementById('formProducto');
-    selectProducto.addEventListener('change', (e) => {
+  // Event listener para cuando se selecciona un producto
+  const selectProducto = document.getElementById('formProducto');
+  selectProducto.addEventListener('change', (e) => {
+    const idProductoSeleccionado = parseInt(e.target.value);
+    const productoSeleccionado = productos.find(p => p.idProducto === idProductoSeleccionado);
+    
+    if (productoSeleccionado) {
+      // Pre-llenar el costo/precio según el tipo de movimiento
+      if (esEntrada) {
+        // En ENTRADA: pre-llenar con el precio de costo
+        const inputCosto = document.getElementById('formCostoUnitario');
+        if (inputCosto) {
+          inputCosto.value = productoSeleccionado.precioCosto || '';
+        }
+      } else {
+        // En SALIDA: pre-llenar con el precio de venta
+        const inputPrecio = document.getElementById('formPrecioUnitario');
+        if (inputPrecio) {
+          inputPrecio.value = productoSeleccionado.precioVenta || '';
+        }
+      }
+    }
+
+    // Validar stock (solo para salidas)
+    if (!esEntrada) {
       const option = e.target.options[e.target.selectedIndex];
       const stockActual = parseInt(option.dataset.stock || '0');
       const cantidadInput = document.getElementById('formCantidad');
@@ -256,9 +277,11 @@ function abrirModalMovimiento(tipo) {
         cantidadInput.max = '';
         cantidadInput.removeAttribute('data-stock');
       }
-    });
+    }
+  });
 
-    // Validar cantidad vs stock al escribir
+  // Validar cantidad vs stock al escribir (solo para salidas)
+  if (!esEntrada) {
     const cantidadInput = document.getElementById('formCantidad');
     cantidadInput.addEventListener('input', (e) => {
       const cantidad = parseInt(e.target.value);

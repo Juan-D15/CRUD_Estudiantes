@@ -75,10 +75,11 @@
     window.API_PRODUCTOS_LISTAR = "{% url 'api_producto_listar' %}";
     window.API_PRODUCTOS_CREAR = "{% url 'api_producto_crear' %}";
     window.API_CATEGORIAS_LISTAR = "{% url 'api_categoria_listar' %}";
+    window.API_CATEGORIAS_PAGE = "{% url 'admin_prod_categorias' %}";
     // URLs base para categorías de productos (se completan con IDs en JavaScript)
     window.API_PRODUCTO_CATEGORIAS_BASE = "/api/productos/";
   </script>
-  <script src="{% static 'js/productos-sistema.js' %}"></script>
+  <script src="{% static 'js/productos-sistema.js' %}?v=3"></script>
 </body>
 </html>
 

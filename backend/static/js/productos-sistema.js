@@ -180,6 +180,38 @@ function editarProducto(id) {
   document.getElementById('formEstado').value = productoActual.estado || 'activo';
 }
 
+// Función para cargar categorías actuales del producto
+async function cargarCategoriasProducto(idProducto) {
+  try {
+    // Obtener categorías asignadas al producto
+    const response = await fetch(`${window.API_PRODUCTO_CATEGORIAS_BASE}${idProducto}/categorias`, {
+      headers: { 'X-CSRFToken': csrftoken }
+    });
+    const data = await response.json();
+    
+    const categoriasDelProducto = data.ok ? (data.data || []) : [];
+    const idsCategoriasAsignadas = categoriasDelProducto.map(c => c.idCategoria);
+    
+    // Generar checkboxes con las categorías marcadas
+    const categoriasForm = document.getElementById('categoriasForm');
+    if (categoriasForm) {
+      categoriasForm.innerHTML = categorias
+        .filter(c => c.estado === 'activa')
+        .map(c => {
+          const checked = idsCategoriasAsignadas.includes(c.idCategoria) ? 'checked' : '';
+          return `
+            <label class="checkbox-item" style="margin: 0;">
+              <input type="checkbox" value="${c.idCategoria}" ${checked}>
+              <span>${c.nombre}</span>
+            </label>
+          `;
+        }).join('');
+    }
+  } catch (error) {
+    console.error('Error al cargar categorías del producto:', error);
+  }
+}
+
 function mostrarModalFormulario(titulo) {
   if (!document.getElementById('modalForm')) {
     const modal = document.createElement('div');
@@ -303,54 +335,40 @@ function mostrarModalFormulario(titulo) {
 
   document.getElementById('modalForm').style.display = 'flex';
 
-  // Generar checkboxes de categorías
+  // Generar checkboxes de categorías (para CREACIÓN y EDICIÓN)
   const categoriasForm = document.getElementById('categoriasForm');
   const seccionCategorias = categoriasForm ? categoriasForm.closest('.field') : null;
   
-  if (productoActual) {
-    // Si es EDICIÓN, ocultar sección de categorías y mostrar mensaje
-    if (seccionCategorias) {
-      seccionCategorias.style.display = 'none';
-    }
-    // Crear mensaje informativo si no existe
-    if (!document.getElementById('mensaje-categorias-edicion')) {
-      const mensajeCategorias = document.createElement('div');
-      mensajeCategorias.id = 'mensaje-categorias-edicion';
-      mensajeCategorias.style.cssText = 'padding: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; margin-top: 16px; color: rgba(255,255,255,0.9); font-size: 13px;';
-      mensajeCategorias.innerHTML = `
-        <strong>ℹCategorías:</strong> Para gestionar las categorías de este producto, guarda los cambios y luego usa el botón <strong>"Categorías"</strong> en la tabla.
-      `;
-      // Insertar antes del botón Guardar
-      const btnGuardar = document.querySelector('#formProducto button[type="submit"]');
-      if (btnGuardar) {
-        btnGuardar.parentElement.insertBefore(mensajeCategorias, btnGuardar);
-      }
-    }
-  } else {
-    // Si es CREACIÓN, mostrar checkboxes de categorías
-    if (seccionCategorias) {
-      seccionCategorias.style.display = 'block';
-    }
-    // Eliminar mensaje si existe
-    const mensajeExistente = document.getElementById('mensaje-categorias-edicion');
-    if (mensajeExistente) {
-      mensajeExistente.remove();
-    }
-    
-    if (categoriasForm) {
-      categoriasForm.innerHTML = categorias
-        .filter(c => c.estado === 'activa')
-        .map(c => {
-          return `
-            <label class="checkbox-item" style="margin: 0;">
-              <input type="checkbox" value="${c.idCategoria}">
-              <span>${c.nombre}</span>
-            </label>
-          `;
-        }).join('');
-      
-      if (categorias.filter(c => c.estado === 'activa').length === 0) {
-        categoriasForm.innerHTML = '<p style="color: rgba(255,255,255,0.5); margin: 0;">No hay categorías activas. Crea una categoría primero.</p>';
+  // Siempre mostrar la sección de categorías
+  if (seccionCategorias) {
+    seccionCategorias.style.display = 'block';
+  }
+  
+  // Eliminar mensaje si existe (ya no se necesita)
+  const mensajeExistente = document.getElementById('mensaje-categorias-edicion');
+  if (mensajeExistente) {
+    mensajeExistente.remove();
+  }
+  
+  if (categoriasForm) {
+    if (categorias.filter(c => c.estado === 'activa').length === 0) {
+      categoriasForm.innerHTML = '<p style="color: rgba(255,255,255,0.5); margin: 0;">No hay categorías activas. Crea una categoría primero.</p>';
+    } else {
+      // Si es EDICIÓN, cargar categorías actuales del producto
+      if (productoActual) {
+        cargarCategoriasProducto(productoActual.idProducto);
+      } else {
+        // Si es CREACIÓN, mostrar checkboxes sin marcar
+        categoriasForm.innerHTML = categorias
+          .filter(c => c.estado === 'activa')
+          .map(c => {
+            return `
+              <label class="checkbox-item" style="margin: 0;">
+                <input type="checkbox" value="${c.idCategoria}">
+                <span>${c.nombre}</span>
+              </label>
+            `;
+          }).join('');
       }
     }
   }
@@ -471,15 +489,31 @@ async function guardarProducto(event) {
     const data = await response.json();
 
     if (data.ok) {
-      // Si es un producto NUEVO y hay categorías seleccionadas, asignarlas
-      if (!productoActual && categoriasSeleccionadas.length > 0 && data.idProducto) {
-        console.log(`✅ Producto creado con ID: ${data.idProducto}. Asignando ${categoriasSeleccionadas.length} categorías...`);
+      const idProductoFinal = productoActual ? productoActual.idProducto : data.idProducto;
+      
+      // Actualizar categorías (tanto para CREAR como para EDITAR)
+      if (idProductoFinal) {
+        console.log(`✅ Actualizando categorías para producto ID: ${idProductoFinal}...`);
         
-        // Asignar cada categoría seleccionada
-        for (const idCategoria of categoriasSeleccionadas) {
+        // Obtener categorías actuales del producto
+        const respActuales = await fetch(`${window.API_PRODUCTO_CATEGORIAS_BASE}${idProductoFinal}/categorias`, {
+          headers: { 'X-CSRFToken': csrftoken }
+        });
+        const dataActuales = await respActuales.json();
+        const categoriasActuales = dataActuales.ok ? (dataActuales.data || []).map(c => c.idCategoria) : [];
+        
+        // Determinar qué categorías agregar y qué categorías eliminar
+        const categoriasAgregar = categoriasSeleccionadas.filter(id => !categoriasActuales.includes(id));
+        const categoriasEliminar = categoriasActuales.filter(id => !categoriasSeleccionadas.includes(id));
+        
+        console.log(`📋 Categorías a agregar: ${categoriasAgregar.length}`, categoriasAgregar);
+        console.log(`📋 Categorías a eliminar: ${categoriasEliminar.length}`, categoriasEliminar);
+        
+        // Agregar nuevas categorías
+        for (const idCategoria of categoriasAgregar) {
           try {
             const respCat = await fetch(
-              `${window.API_PRODUCTO_CATEGORIAS_BASE}${data.idProducto}/categorias/${idCategoria}/assign`,
+              `${window.API_PRODUCTO_CATEGORIAS_BASE}${idProductoFinal}/categorias/${idCategoria}/assign`,
               {
                 method: 'POST',
                 headers: {
@@ -490,7 +524,7 @@ async function guardarProducto(event) {
             );
             const dataCat = await respCat.json();
             if (dataCat.ok) {
-              console.log(`✅ Categoría ${idCategoria} asignada al producto ${data.idProducto}`);
+              console.log(`✅ Categoría ${idCategoria} asignada`);
             } else {
               console.error(`❌ Error al asignar categoría ${idCategoria}:`, dataCat.msg);
             }
@@ -499,7 +533,35 @@ async function guardarProducto(event) {
           }
         }
         
-        mostrarNotificacion(`Producto creado con ${categoriasSeleccionadas.length} categoría(s) asignada(s)`);
+        // Eliminar categorías deseleccionadas
+        for (const idCategoria of categoriasEliminar) {
+          try {
+            const respCat = await fetch(
+              `${window.API_PRODUCTO_CATEGORIAS_BASE}${idProductoFinal}/categorias/${idCategoria}/unassign`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': csrftoken
+                }
+              }
+            );
+            const dataCat = await respCat.json();
+            if (dataCat.ok) {
+              console.log(`✅ Categoría ${idCategoria} eliminada`);
+            } else {
+              console.error(`❌ Error al eliminar categoría ${idCategoria}:`, dataCat.msg);
+            }
+          } catch (errCat) {
+            console.error(`❌ Error al eliminar categoría ${idCategoria}:`, errCat);
+          }
+        }
+        
+        mostrarNotificacion(
+          productoActual 
+            ? `Producto actualizado con ${categoriasSeleccionadas.length} categoría(s)` 
+            : `Producto creado con ${categoriasSeleccionadas.length} categoría(s)`
+        );
       } else {
         mostrarNotificacion(
           productoActual ? 'Producto actualizado exitosamente' : 'Producto creado exitosamente'
@@ -579,7 +641,7 @@ function mostrarModalCategorias(producto) {
     modal.innerHTML = `
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Gestionar Categorías: ${producto.nombre}</h2>
+          <h2 id="tituloModalCategorias">Gestionar Categorías: ${producto.nombre}</h2>
           <button class="modal-close" onclick="cerrarModalCategorias()">&times;</button>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -600,6 +662,12 @@ function mostrarModalCategorias(producto) {
       </div>
     `;
     document.body.appendChild(modal);
+  } else {
+    // Si el modal ya existe, actualizar el título con el nombre del producto actual
+    const tituloModal = document.getElementById('tituloModalCategorias');
+    if (tituloModal) {
+      tituloModal.textContent = `Gestionar Categorías: ${producto.nombre}`;
+    }
   }
 
   const categoriasList = document.getElementById('categoriasList');
@@ -608,7 +676,7 @@ function mostrarModalCategorias(producto) {
   const btnAgregarCategoria = document.getElementById('btnAgregarCategoria');
   if (btnAgregarCategoria) {
     btnAgregarCategoria.onclick = () => {
-      window.location.href = 'categorias-productos.html';
+      window.location.href = window.API_CATEGORIAS_PAGE || '/admin/productos/categorias';
     };
   }
   
